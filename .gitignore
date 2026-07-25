@@ -1,0 +1,40 @@
+# Laravel core
+/vendor
+/node_modules
+/public/build
+/public/hot
+/public/storage
+/storage/*.key
+/storage/pail
+/bootstrap/ssr
+/.phpunit.cache
+.phpunit.result.cache
+
+# Environment & credentials
+.env
+.env.backup
+.env.production
+.env.*.local
+auth.json
+
+# Homestead (kalau ga dipakai boleh dihapus, tapi aman dibiarkan)
+Homestead.json
+Homestead.yaml
+
+# Logs
+npm-debug.log
+yarn-error.log
+storage/logs/*.log
+
+# Editor / IDE
+/.fleet
+/.idea
+/.vscode
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Uploaded files (attachment PDF stock mutations) — jangan ikut ke-commit
+/storage/app/public/attachments/*
+!/storage/app/public/attachments/.gitkeep
