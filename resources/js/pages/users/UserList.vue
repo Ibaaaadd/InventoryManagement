@@ -1,6 +1,7 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, watch, computed } from "vue";
 import { useRouter } from "vue-router";
+import axios from "@/lib/axios";
 import { Plus, Pencil, Trash2 } from "lucide-vue-next";
 import { useAuth } from "@/composables/useAuth";
 import { useStatusBadge } from "@/composables/useStatusBadge";
@@ -39,56 +40,34 @@ const columns = [
 ];
 
 onMounted(() => {
-    // TEMPORARY: role check disabled for UI development phase
-    // Backend auth is not active yet, so isAdministrator always returns false
-    // Re-enable this check after backend authentication is implemented
-    // if (!isAdministrator.value) {
-    //   router.push('/dashboard');
-    //   return;
-    // }
     fetchUsers();
 });
 
 const fetchUsers = async () => {
     loading.value = true;
     try {
-        users.value = [
-            {
-                id: 1,
-                name: "John Doe",
-                email: "john@example.com",
-                role: "Administrator",
-                status: "active",
-                created_at: "2026-01-15",
-            },
-            {
-                id: 2,
-                name: "Jane Smith",
-                email: "jane@example.com",
-                role: "Manager",
-                status: "active",
-                created_at: "2026-02-20",
-            },
-            {
-                id: 3,
-                name: "Mike Johnson",
-                email: "mike@example.com",
-                role: "Staff",
-                status: "active",
-                created_at: "2026-03-10",
-            },
-            {
-                id: 4,
-                name: "Sarah Williams",
-                email: "sarah@example.com",
-                role: "Staff",
-                status: "inactive",
-                created_at: "2026-04-05",
-            },
-        ];
-        total.value = users.value.length;
+        const params = {
+            page: currentPage.value,
+            per_page: perPage.value,
+        };
+        
+        if (searchQuery.value) {
+            params.search = searchQuery.value;
+        }
+        
+        if (sortValue.value) {
+            const [field, direction] = sortValue.value.split('_');
+            params.sort = field;
+            params.order = direction;
+        }
+        
+        const response = await axios.get('/users', { params });
+        users.value = response.data.data || response.data;
+        total.value = response.data.total || users.value.length;
     } catch (error) {
         console.error("Failed to fetch users:", error);
+        users.value = [];
+        total.value = 0;
     } finally {
         loading.value = false;
     }
@@ -128,12 +107,27 @@ const handleEdit = (row) => {
     router.push(`/users/${row.id}/edit`);
 };
 
-const handleDelete = (row) => {
-    if (confirm(`Are you sure you want to delete user ${row.name}?`)) {
-        console.log("Delete user:", row.id);
+const handleDelete = async (row) => {
+    if (!confirm(`Are you sure you want to delete user ${row.name}?`)) {
+        return;
+    }
+    
+    try {
+        loading.value = true;
+        await axios.delete(`/users/${row.id}`);
         fetchUsers();
+    } catch (error) {
+        console.error("Failed to delete user:", error);
+        alert(error.response?.data?.message || "Failed to delete user. Please try again.");
+    } finally {
+        loading.value = false;
     }
 };
+
+watch(searchQuery, () => {
+    currentPage.value = 1;
+    fetchUsers();
+});
 
 const getRoleBadgeVariant = (role) => {
     const variants = {

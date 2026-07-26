@@ -1,24 +1,19 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import axios from '@/lib/axios';
 import { Save, X, ArrowLeft } from 'lucide-vue-next';
 import BaseButton from '@/components/ui/BaseButton.vue';
 import BaseCard from '@/components/ui/BaseCard.vue';
 import BaseInput from '@/components/ui/BaseInput.vue';
 import BaseTextarea from '@/components/ui/BaseTextarea.vue';
+import AuditTrailPanel from '@/components/AuditTrailPanel.vue';
 
 const router = useRouter();
 const route = useRoute();
 
 const isEditMode = computed(() => !!route.params.id);
 const pageTitle = computed(() => isEditMode.value ? 'Edit Role' : 'Create New Role');
-
-// TODO: ganti dengan data dari API GET /api/roles/:id untuk edit mode
-const dummyRoles = {
-  1: { id: 1, name: 'Administrator', description: 'Full system access with all permissions' },
-  2: { id: 2, name: 'Manager', description: 'Can manage items, view reports, and approve mutations' },
-  3: { id: 3, name: 'Staff', description: 'Can create and view stock mutations' },
-};
 
 const form = ref({
   name: '',
@@ -33,25 +28,26 @@ const errors = ref({
 const loading = ref(false);
 const submitting = ref(false);
 
-onMounted(() => {
+onMounted(async () => {
   if (isEditMode.value) {
-    loading.value = true;
-    
-    // TODO: ganti dengan fetch API GET /api/roles/:id
-    setTimeout(() => {
-      const roleId = parseInt(route.params.id);
-      const roleData = dummyRoles[roleId];
+    try {
+      loading.value = true;
+      const response = await axios.get(`/roles/${route.params.id}`);
+      const roleData = response.data;
       
-      if (roleData) {
-        form.value.name = roleData.name;
-        form.value.description = roleData.description;
-      } else {
+      form.value.name = roleData.name;
+      form.value.description = roleData.description;
+    } catch (error) {
+      console.error('Failed to fetch role:', error);
+      if (error.response?.status === 404) {
         alert('Role not found');
-        router.push({ name: 'RoleList' });
+      } else {
+        alert('Failed to load role data');
       }
-      
+      router.push({ name: 'RoleList' });
+    } finally {
       loading.value = false;
-    }, 500);
+    }
   }
 });
 
@@ -78,20 +74,27 @@ const validateForm = () => {
 const handleSubmit = async () => {
   if (!validateForm()) return;
 
-  submitting.value = true;
-
-  // TODO: ganti dengan POST /api/roles atau PUT /api/roles/:id
-  console.log('Form submitted:', {
-    mode: isEditMode.value ? 'edit' : 'create',
-    roleId: route.params.id,
-    data: form.value,
-  });
-
-  setTimeout(() => {
-    submitting.value = false;
-    alert(`Role ${isEditMode.value ? 'updated' : 'created'} successfully!`);
+  try {
+    submitting.value = true;
+    
+    if (isEditMode.value) {
+      await axios.put(`/roles/${route.params.id}`, form.value);
+    } else {
+      await axios.post('/roles', form.value);
+    }
+    
     router.push({ name: 'RoleList' });
-  }, 1000);
+  } catch (error) {
+    console.error('Failed to submit role:', error);
+    
+    if (error.response?.data?.errors) {
+      errors.value = error.response.data.errors;
+    } else {
+      alert(error.response?.data?.message || 'Failed to save role. Please try again.');
+    }
+  } finally {
+    submitting.value = false;
+  }
 };
 
 const handleCancel = () => {
@@ -166,6 +169,13 @@ const handleCancel = () => {
           </BaseButton>
         </div>
       </form>
+    </BaseCard>
+
+    <BaseCard v-if="isEditMode" :padding="true">
+      <AuditTrailPanel
+        auditable-type="App\Models\Role"
+        :auditable-id="route.params.id"
+      />
     </BaseCard>
   </div>
 </template>

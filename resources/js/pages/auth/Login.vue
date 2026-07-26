@@ -136,20 +136,6 @@ const handleSubmit = async () => {
                             Contact your administrator
                         </a>
                     </p>
-                    <div class="mt-4 pt-4 border-t border-slate-200">
-                        <p class="text-xs text-slate-500 mb-2">
-                            Development Mode (Auth backend not ready)
-                        </p>
-                        <BaseButton
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            @click="router.push({ name: 'Dashboard' })"
-                            class="w-full"
-                        >
-                            Skip to Dashboard (Testing)
-                        </BaseButton>
-                    </div>
                 </div>
             </BaseCard>
         </div>

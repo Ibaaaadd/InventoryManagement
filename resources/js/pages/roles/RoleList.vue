@@ -1,6 +1,7 @@
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
+import axios from "@/lib/axios";
 import { Search, Plus, Pencil, Trash2 } from "lucide-vue-next";
 import BaseButton from "@/components/ui/BaseButton.vue";
 import BaseCard from "@/components/ui/BaseCard.vue";
@@ -11,35 +12,27 @@ import BaseInput from "@/components/ui/BaseInput.vue";
 
 const router = useRouter();
 
-// TODO: ganti dengan data dari API GET /api/roles
-const roles = ref([
-    {
-        id: 1,
-        name: "Administrator",
-        description: "Full system access with all permissions",
-        users_count: 2,
-        created_at: "2024-01-15T08:30:00",
-    },
-    {
-        id: 2,
-        name: "Manager",
-        description: "Can manage items, view reports, and approve mutations",
-        users_count: 5,
-        created_at: "2024-01-16T10:15:00",
-    },
-    {
-        id: 3,
-        name: "Staff",
-        description: "Can create and view stock mutations",
-        users_count: 12,
-        created_at: "2024-01-16T11:20:00",
-    },
-]);
-
+const roles = ref([]);
 const loading = ref(false);
 const searchQuery = ref("");
 const showDeleteModal = ref(false);
 const roleToDelete = ref(null);
+
+const fetchRoles = async () => {
+    try {
+        loading.value = true;
+        const params = {};
+        if (searchQuery.value) {
+            params.search = searchQuery.value;
+        }
+        const response = await axios.get("/roles", { params });
+        roles.value = response.data.data || response.data;
+    } catch (error) {
+        console.error("Failed to fetch roles:", error);
+    } finally {
+        loading.value = false;
+    }
+};
 
 const columns = [
     { key: "name", label: "Role Name", sortable: true },
@@ -48,16 +41,7 @@ const columns = [
     { key: "created_at", label: "Created Date", sortable: true },
 ];
 
-const filteredRoles = computed(() => {
-    if (!searchQuery.value) return roles.value;
-
-    const query = searchQuery.value.toLowerCase();
-    return roles.value.filter(
-        (role) =>
-            role.name.toLowerCase().includes(query) ||
-            role.description.toLowerCase().includes(query),
-    );
-});
+const filteredRoles = computed(() => roles.value);
 
 const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("id-ID", {
@@ -76,20 +60,37 @@ const openDeleteModal = (role) => {
     showDeleteModal.value = true;
 };
 
-const confirmDelete = () => {
-    // TODO: ganti dengan DELETE /api/roles/:id
-    console.log("Delete role:", roleToDelete.value);
+const confirmDelete = async () => {
+    if (!roleToDelete.value) return;
 
-    roles.value = roles.value.filter((r) => r.id !== roleToDelete.value.id);
-
-    showDeleteModal.value = false;
-    roleToDelete.value = null;
+    try {
+        loading.value = true;
+        await axios.delete(`/roles/${roleToDelete.value.id}`);
+        
+        roles.value = roles.value.filter((r) => r.id !== roleToDelete.value.id);
+        
+        showDeleteModal.value = false;
+        roleToDelete.value = null;
+    } catch (error) {
+        console.error("Failed to delete role:", error);
+        alert(error.response?.data?.message || "Failed to delete role. Please try again.");
+    } finally {
+        loading.value = false;
+    }
 };
 
 const cancelDelete = () => {
     showDeleteModal.value = false;
     roleToDelete.value = null;
 };
+
+watch(searchQuery, () => {
+    fetchRoles();
+});
+
+onMounted(() => {
+    fetchRoles();
+});
 </script>
 
 <template>

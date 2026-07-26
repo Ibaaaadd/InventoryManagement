@@ -84,19 +84,16 @@ const routes = [
         path: 'roles',
         name: 'RoleList',
         component: () => import('@/pages/roles/RoleList.vue'),
-        meta: { requiredRoles: ['Administrator'] },
       },
       {
         path: 'roles/create',
         name: 'RoleCreate',
         component: () => import('@/pages/roles/RoleForm.vue'),
-        meta: { requiredRoles: ['Administrator'] },
       },
       {
         path: 'roles/:id/edit',
         name: 'RoleEdit',
         component: () => import('@/pages/roles/RoleForm.vue'),
-        meta: { requiredRoles: ['Administrator'] },
       },
     ],
   },
@@ -108,31 +105,35 @@ const router = createRouter({
 });
 
 router.beforeEach(async (to, from, next) => {
-  // TEMPORARY: Auth guard dinonaktifkan sementara untuk tahap development UI
-  // Aktifkan kembali setelah backend auth (Sanctum) selesai dibuat
-  // Uncomment logic di bawah ini untuk mengaktifkan kembali auth guard:
-  
-  // const authStore = useAuthStore();
+  const authStore = useAuthStore();
 
-  // if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-  //   if (to.name !== 'Login') {
-  //     next({ name: 'Login', query: { redirect: to.fullPath } });
-  //     return;
-  //   }
-  // }
+  if (!authStore.isAuthenticated && authStore.user === null) {
+    try {
+      await authStore.fetchUser();
+    } catch (error) {
+      // User not authenticated
+    }
+  }
 
-  // if (to.name === 'Login' && authStore.isAuthenticated) {
-  //   next({ name: 'Dashboard' });
-  //   return;
-  // }
+  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+    if (to.name !== 'Login') {
+      next({ name: 'Login', query: { redirect: to.fullPath } });
+      return;
+    }
+  }
 
-  // if (to.meta.requiredRoles) {
-  //   const hasRequiredRole = to.meta.requiredRoles.includes(authStore.user?.role);
-  //   if (!hasRequiredRole) {
-  //     next({ name: 'Dashboard' });
-  //     return;
-  //   }
-  // }
+  if (to.name === 'Login' && authStore.isAuthenticated) {
+    next({ name: 'Dashboard' });
+    return;
+  }
+
+  if (to.meta.requiredRoles) {
+    const hasRequiredRole = to.meta.requiredRoles.includes(authStore.user?.role?.name);
+    if (!hasRequiredRole) {
+      next({ name: 'Dashboard' });
+      return;
+    }
+  }
 
   next();
 });

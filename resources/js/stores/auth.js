@@ -17,8 +17,8 @@ export const useAuthStore = defineStore('auth', {
             try {
                 this.loading = true;
                 const response = await axios.get('/user');
-                this.user = response.data;
-                return response.data;
+                this.user = response.data.user;
+                return response.data.user;
             } catch (error) {
                 this.user = null;
                 throw error;

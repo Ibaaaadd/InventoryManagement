@@ -1,12 +1,14 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import axios from '@/lib/axios';
 import { Save, X, ArrowLeft } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
 import BaseCard from '@/components/ui/BaseCard.vue';
 import BaseInput from '@/components/ui/BaseInput.vue';
 import BaseSearchableSelect from '@/components/ui/BaseSearchableSelect.vue';
 import BaseButton from '@/components/ui/BaseButton.vue';
+import AuditTrailPanel from '@/components/AuditTrailPanel.vue';
 
 const router = useRouter();
 const route = useRoute();
@@ -28,11 +30,20 @@ const errors = ref({});
 const loading = ref(false);
 const submitting = ref(false);
 
-const roleOptions = [
-  { value: 'Administrator', label: 'Administrator' },
-  { value: 'Manager', label: 'Manager' },
-  { value: 'Staff', label: 'Staff' },
-];
+const roleOptions = ref([]);
+
+const fetchRoles = async () => {
+  try {
+    const response = await axios.get('/roles');
+    const roles = response.data.data || response.data;
+    roleOptions.value = roles.map(role => ({
+      value: role.id,
+      label: role.name,
+    }));
+  } catch (error) {
+    console.error('Failed to fetch roles:', error);
+  }
+};
 
 const statusOptions = [
   { value: 'active', label: 'Active' },
@@ -40,13 +51,7 @@ const statusOptions = [
 ];
 
 onMounted(async () => {
-  // TEMPORARY: role check disabled for UI development phase
-  // Backend auth is not active yet, so isAdministrator always returns false
-  // Re-enable this check after backend authentication is implemented
-  // if (!isAdministrator.value) {
-  //   router.push('/dashboard');
-  //   return;
-  // }
+  await fetchRoles();
   if (isEdit.value) {
     await fetchUser();
   }
@@ -55,16 +60,25 @@ onMounted(async () => {
 const fetchUser = async () => {
   loading.value = true;
   try {
+    const response = await axios.get(`/users/${route.params.id}`);
+    const user = response.data;
+    
     form.value = {
-      name: 'John Doe',
-      email: 'john@example.com',
-      role: 'Administrator',
-      status: 'active',
+      name: user.name,
+      email: user.email,
+      role: user.role_id,
+      status: user.status || 'active',
       password: '',
       password_confirmation: '',
     };
   } catch (error) {
     console.error('Failed to fetch user:', error);
+    if (error.response?.status === 404) {
+      alert('User not found');
+    } else {
+      alert('Failed to load user data');
+    }
+    router.push('/users');
   } finally {
     loading.value = false;
   }
@@ -107,12 +121,33 @@ const handleSubmit = async () => {
 
   submitting.value = true;
   try {
-    console.log('Submitting user:', form.value);
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    const payload = {
+      name: form.value.name,
+      email: form.value.email,
+      role_id: form.value.role,
+      status: form.value.status,
+    };
+
+    if (form.value.password) {
+      payload.password = form.value.password;
+      payload.password_confirmation = form.value.password_confirmation;
+    }
+
+    if (isEdit.value) {
+      await axios.put(`/users/${route.params.id}`, payload);
+    } else {
+      await axios.post('/users', payload);
+    }
+
     router.push('/users');
   } catch (error) {
     console.error('Failed to save user:', error);
-    errors.value.submit = 'Failed to save user. Please try again.';
+    
+    if (error.response?.data?.errors) {
+      errors.value = error.response.data.errors;
+    } else {
+      errors.value.submit = error.response?.data?.message || 'Failed to save user. Please try again.';
+    }
   } finally {
     submitting.value = false;
   }
@@ -241,6 +276,13 @@ const handleCancel = () => {
           </BaseButton>
         </div>
       </form>
+    </BaseCard>
+
+    <BaseCard v-if="isEdit" :padding="true">
+      <AuditTrailPanel
+        auditable-type="App\Models\User"
+        :auditable-id="route.params.id"
+      />
     </BaseCard>
   </div>
 </template>
