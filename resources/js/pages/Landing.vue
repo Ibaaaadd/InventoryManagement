@@ -295,30 +295,10 @@ const navigateToLogin = () => {
             </div>
         </div>
     </section>
-
-    <footer class="py-12 bg-slate-900 text-white">
-        <div class="container mx-auto px-4">
-            <div class="max-w-6xl mx-auto text-center">
-                <h3 class="text-2xl font-bold mb-4">
-                    Ready to streamline your inventory?
-                </h3>
-                <p class="text-slate-400 mb-6">
-                    Contact your system administrator for access credentials
-                </p>
-                <BaseButton
-                    @click="navigateToLogin"
-                    variant="primary"
-                    size="lg"
-                >
-                    Sign In Now
-                </BaseButton>
-                <div class="mt-12 pt-8 border-t border-slate-800">
-                    <p class="text-slate-400 text-sm">
-                        &copy; {{ new Date().getFullYear() }} Inventory
-                        Management System. All rights reserved.
-                    </p>
-                </div>
-            </div>
-        </div>
+    <footer class="py-6 text-center text-sm text-slate-600">
+        <p>
+            &copy; {{ new Date().getFullYear() }} Inventory Management System.
+            All rights reserved.
+        </p>
     </footer>
 </template>
