@@ -1,5 +1,8 @@
 <script setup>
-defineProps({
+import { computed } from 'vue';
+import { ChevronLeft, ChevronRight } from 'lucide-vue-next';
+
+const props = defineProps({
   currentPage: {
     type: Number,
     required: true,
@@ -25,8 +28,6 @@ const changePage = (page) => {
     emit('page-change', page);
   }
 };
-
-const props = defineProps();
 
 const visiblePages = computed(() => {
   const pages = [];
@@ -54,74 +55,73 @@ const visiblePages = computed(() => {
 
   return pages;
 });
+
+const rangeStart = computed(() => (props.currentPage - 1) * props.perPage + 1);
+const rangeEnd = computed(() => Math.min(props.currentPage * props.perPage, props.total));
 </script>
 
 <template>
-  <div class="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
+  <div class="flex items-center justify-between border-slate-200 bg-white px-4 py-3 sm:px-6 rounded-b-lg">
     <div class="flex flex-1 justify-between sm:hidden">
       <button
         @click="changePage(currentPage - 1)"
         :disabled="currentPage === 1"
-        class="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        class="relative inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
+        <ChevronLeft :size="16" />
         Previous
       </button>
       <button
         @click="changePage(currentPage + 1)"
         :disabled="currentPage === totalPages"
-        class="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        class="relative inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
         Next
+        <ChevronRight :size="16" />
       </button>
     </div>
+    
     <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
       <div>
-        <p class="text-sm text-gray-700">
-          Showing <span class="font-medium">{{ (currentPage - 1) * perPage + 1 }}</span> to
-          <span class="font-medium">{{ Math.min(currentPage * perPage, total) }}</span> of
-          <span class="font-medium">{{ total }}</span> results
+        <p class="text-sm text-slate-600">
+          Showing <span class="font-semibold text-slate-900">{{ rangeStart }}</span> to
+          <span class="font-semibold text-slate-900">{{ rangeEnd }}</span> of
+          <span class="font-semibold text-slate-900">{{ total }}</span> results
         </p>
       </div>
-      <div>
-        <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm">
-          <button
-            @click="changePage(currentPage - 1)"
-            :disabled="currentPage === 1"
-            class="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <span class="sr-only">Previous</span>
-            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" />
-            </svg>
-          </button>
-          
-          <button
-            v-for="(page, index) in visiblePages"
-            :key="index"
-            @click="page !== '...' && changePage(page)"
-            :disabled="page === '...'"
-            class="relative inline-flex items-center px-4 py-2 text-sm font-semibold ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:cursor-default"
-            :class="{
-              'z-10 bg-primary-600 text-white ring-primary-600': page === currentPage,
-              'text-gray-900': page !== currentPage && page !== '...',
-              'text-gray-400': page === '...',
-            }"
-          >
-            {{ page }}
-          </button>
-          
-          <button
-            @click="changePage(currentPage + 1)"
-            :disabled="currentPage === totalPages"
-            class="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <span class="sr-only">Next</span>
-            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
-            </svg>
-          </button>
-        </nav>
-      </div>
+      
+      <nav class="isolate inline-flex gap-1">
+        <button
+          @click="changePage(currentPage - 1)"
+          :disabled="currentPage === 1"
+          class="relative inline-flex items-center justify-center w-9 h-9 rounded-lg text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        >
+          <ChevronLeft :size="18" />
+        </button>
+        
+        <button
+          v-for="(page, index) in visiblePages"
+          :key="index"
+          @click="page !== '...' && changePage(page)"
+          :disabled="page === '...'"
+          class="relative inline-flex items-center justify-center min-w-[36px] h-9 px-3 text-sm font-medium rounded-lg transition-all duration-200"
+          :class="{
+            'bg-primary-600 text-white shadow-sm hover:bg-primary-700': page === currentPage,
+            'text-slate-700 hover:bg-slate-100': page !== currentPage && page !== '...',
+            'text-slate-400 cursor-default': page === '...',
+          }"
+        >
+          {{ page }}
+        </button>
+        
+        <button
+          @click="changePage(currentPage + 1)"
+          :disabled="currentPage === totalPages"
+          class="relative inline-flex items-center justify-center w-9 h-9 rounded-lg text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        >
+          <ChevronRight :size="18" />
+        </button>
+      </nav>
     </div>
   </div>
 </template>

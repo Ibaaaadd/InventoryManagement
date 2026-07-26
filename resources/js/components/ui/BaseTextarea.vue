@@ -3,17 +3,17 @@ import { computed } from 'vue';
 import { XCircle } from 'lucide-vue-next';
 
 const props = defineProps({
-  modelValue: [String, Number],
+  modelValue: String,
   label: String,
-  type: {
-    type: String,
-    default: 'text',
-  },
   placeholder: String,
   error: String,
   required: Boolean,
   disabled: Boolean,
   hint: String,
+  rows: {
+    type: Number,
+    default: 4,
+  },
 });
 
 const emit = defineEmits(['update:modelValue']);
@@ -30,18 +30,18 @@ const value = computed({
       {{ label }}
       <span v-if="required" class="text-danger-600">*</span>
     </label>
-    <input
+    <textarea
       v-model="value"
-      :type="type"
       :placeholder="placeholder"
       :disabled="disabled"
       :required="required"
-      class="w-full px-3 py-2.5 text-sm border rounded-lg focus:outline-none transition-colors duration-150 focus:ring-2 focus:ring-offset-0 disabled:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-500"
+      :rows="rows"
+      class="w-full px-3 py-2.5 text-sm border rounded-lg focus:outline-none transition-colors duration-150 focus:ring-2 focus:ring-offset-0 disabled:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-500 resize-none"
       :class="{
         'border-danger-300 focus:ring-danger-500/20 focus:border-danger-500 bg-danger-50/50': error,
         'border-slate-300 focus:ring-primary-500/20 focus:border-primary-500': !error,
       }"
-    />
+    ></textarea>
     <p v-if="hint && !error" class="text-xs text-slate-500">{{ hint }}</p>
     <p v-if="error" class="text-xs text-danger-600 flex items-center gap-1">
       <XCircle :size="16" />

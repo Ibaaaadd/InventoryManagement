@@ -1,9 +1,11 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import { Save, X, ArrowLeft } from 'lucide-vue-next';
 import BaseCard from '@/components/ui/BaseCard.vue';
 import BaseInput from '@/components/ui/BaseInput.vue';
-import BaseSelect from '@/components/ui/BaseSelect.vue';
+import BaseSearchableSelect from '@/components/ui/BaseSearchableSelect.vue';
+import BaseTextarea from '@/components/ui/BaseTextarea.vue';
 import BaseButton from '@/components/ui/BaseButton.vue';
 
 const router = useRouter();
@@ -128,15 +130,33 @@ const handleCancel = () => {
 
 <template>
   <div class="space-y-6">
-    <div>
-      <h1 class="text-2xl font-bold text-gray-900">{{ pageTitle }}</h1>
-      <p class="mt-1 text-sm text-gray-600">{{ isEdit ? 'Update item information' : 'Add a new item to inventory' }}</p>
+    <div class="flex items-center gap-4">
+      <button
+        @click="handleCancel"
+        class="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+      >
+        <ArrowLeft :size="20" />
+      </button>
+      <div>
+        <h1 class="text-2xl font-bold text-slate-900 tracking-tight">{{ pageTitle }}</h1>
+        <p class="text-sm text-slate-600 mt-1">
+          {{ isEdit ? 'Update item information' : 'Add a new item to inventory' }}
+        </p>
+      </div>
     </div>
 
-    <BaseCard :padding="true" :shadow="true">
-      <form @submit.prevent="handleSubmit" class="space-y-6">
-        <div v-if="errors.submit" class="p-3 bg-red-50 border border-red-200 rounded-lg">
-          <p class="text-sm text-red-600">{{ errors.submit }}</p>
+    <BaseCard>
+      <div v-if="loading" class="space-y-4">
+        <div class="animate-pulse space-y-4">
+          <div class="h-10 bg-slate-200 rounded"></div>
+          <div class="h-10 bg-slate-200 rounded"></div>
+          <div class="h-24 bg-slate-200 rounded"></div>
+        </div>
+      </div>
+
+      <form v-else @submit.prevent="handleSubmit" class="space-y-6">
+        <div v-if="errors.submit" class="p-3 bg-danger-50 border border-danger-200 rounded-lg">
+          <p class="text-sm text-danger-600">{{ errors.submit }}</p>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -158,7 +178,7 @@ const handleCancel = () => {
             required
           />
 
-          <BaseSelect
+          <BaseSearchableSelect
             v-model="form.category"
             label="Category"
             placeholder="Select category"
@@ -168,7 +188,7 @@ const handleCancel = () => {
             required
           />
 
-          <BaseSelect
+          <BaseSearchableSelect
             v-model="form.unit"
             label="Unit"
             placeholder="Select unit"
@@ -187,7 +207,7 @@ const handleCancel = () => {
             :disabled="loading"
           />
 
-          <BaseSelect
+          <BaseSearchableSelect
             v-model="form.location"
             label="Storage Location"
             placeholder="Select location"
@@ -198,35 +218,31 @@ const handleCancel = () => {
           />
         </div>
 
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">
-            Description
-          </label>
-          <textarea
-            v-model="form.description"
-            rows="4"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-            placeholder="Enter item description (optional)"
-            :disabled="loading"
-          ></textarea>
-        </div>
+        <BaseTextarea
+          v-model="form.description"
+          label="Description"
+          :rows="4"
+          placeholder="Enter item description (optional)"
+          :disabled="loading"
+        />
 
-        <div class="flex justify-end gap-3 pt-4 border-t">
+        <div class="flex items-center gap-3 pt-4 border-t border-slate-200">
+          <BaseButton
+            type="submit"
+            :loading="submitting"
+            :disabled="submitting"
+          >
+            <Save :size="18" />
+            {{ isEdit ? 'Update Item' : 'Create Item' }}
+          </BaseButton>
           <BaseButton
             type="button"
-            variant="secondary"
+            variant="ghost"
             @click="handleCancel"
             :disabled="submitting"
           >
+            <X :size="18" />
             Cancel
-          </BaseButton>
-          <BaseButton
-            type="submit"
-            variant="primary"
-            :loading="submitting"
-            :disabled="loading || submitting"
-          >
-            {{ isEdit ? 'Update Item' : 'Create Item' }}
           </BaseButton>
         </div>
       </form>

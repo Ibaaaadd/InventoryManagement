@@ -1,78 +1,104 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
+import AppLayout from '@/components/layout/AppLayout.vue';
+import GuestLayout from '@/components/layout/GuestLayout.vue';
 
 const routes = [
   {
     path: '/',
-    name: 'Landing',
-    component: () => import('@/pages/Landing.vue'),
-    meta: { requiresAuth: false, layout: 'guest' },
+    component: GuestLayout,
+    children: [
+      {
+        path: '',
+        name: 'Landing',
+        component: () => import('@/pages/Landing.vue'),
+        meta: { requiresAuth: false },
+      },
+      {
+        path: 'login',
+        name: 'Login',
+        component: () => import('@/pages/auth/Login.vue'),
+        meta: { requiresAuth: false },
+      },
+    ],
   },
   {
-    path: '/login',
-    name: 'Login',
-    component: () => import('@/pages/auth/Login.vue'),
-    meta: { requiresAuth: false, layout: 'guest' },
-  },
-  {
-    path: '/dashboard',
-    name: 'Dashboard',
-    component: () => import('@/pages/dashboard/Dashboard.vue'),
+    path: '/',
+    component: AppLayout,
     meta: { requiresAuth: true },
-  },
-  {
-    path: '/items',
-    name: 'ItemList',
-    component: () => import('@/pages/items/ItemList.vue'),
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/items/create',
-    name: 'ItemCreate',
-    component: () => import('@/pages/items/ItemForm.vue'),
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/items/:id/edit',
-    name: 'ItemEdit',
-    component: () => import('@/pages/items/ItemForm.vue'),
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/stock-mutations',
-    name: 'StockMutationList',
-    component: () => import('@/pages/stock-mutations/StockMutationList.vue'),
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/stock-mutations/create',
-    name: 'StockMutationCreate',
-    component: () => import('@/pages/stock-mutations/StockMutationForm.vue'),
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/stock-mutations/:id',
-    name: 'StockMutationDetail',
-    component: () => import('@/pages/stock-mutations/StockMutationDetail.vue'),
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/users',
-    name: 'UserList',
-    component: () => import('@/pages/users/UserList.vue'),
-    meta: { requiresAuth: true, requiredRoles: ['Administrator'] },
-  },
-  {
-    path: '/users/create',
-    name: 'UserCreate',
-    component: () => import('@/pages/users/UserForm.vue'),
-    meta: { requiresAuth: true, requiredRoles: ['Administrator'] },
-  },
-  {
-    path: '/users/:id/edit',
-    name: 'UserEdit',
-    component: () => import('@/pages/users/UserForm.vue'),
-    meta: { requiresAuth: true, requiredRoles: ['Administrator'] },
+    children: [
+      {
+        path: 'dashboard',
+        name: 'Dashboard',
+        component: () => import('@/pages/dashboard/Dashboard.vue'),
+      },
+      {
+        path: 'items',
+        name: 'ItemList',
+        component: () => import('@/pages/items/ItemList.vue'),
+      },
+      {
+        path: 'items/create',
+        name: 'ItemCreate',
+        component: () => import('@/pages/items/ItemForm.vue'),
+      },
+      {
+        path: 'items/:id/edit',
+        name: 'ItemEdit',
+        component: () => import('@/pages/items/ItemForm.vue'),
+      },
+      {
+        path: 'stock-mutations',
+        name: 'StockMutationList',
+        component: () => import('@/pages/stock-mutations/StockMutationList.vue'),
+      },
+      {
+        path: 'stock-mutations/create',
+        name: 'StockMutationCreate',
+        component: () => import('@/pages/stock-mutations/StockMutationForm.vue'),
+      },
+      {
+        path: 'stock-mutations/:id',
+        name: 'StockMutationDetail',
+        component: () => import('@/pages/stock-mutations/StockMutationDetail.vue'),
+      },
+      {
+        path: 'users',
+        name: 'UserList',
+        component: () => import('@/pages/users/UserList.vue'),
+        meta: { requiredRoles: ['Administrator'] },
+      },
+      {
+        path: 'users/create',
+        name: 'UserCreate',
+        component: () => import('@/pages/users/UserForm.vue'),
+        meta: { requiredRoles: ['Administrator'] },
+      },
+      {
+        path: 'users/:id/edit',
+        name: 'UserEdit',
+        component: () => import('@/pages/users/UserForm.vue'),
+        meta: { requiredRoles: ['Administrator'] },
+      },
+      {
+        path: 'roles',
+        name: 'RoleList',
+        component: () => import('@/pages/roles/RoleList.vue'),
+        meta: { requiredRoles: ['Administrator'] },
+      },
+      {
+        path: 'roles/create',
+        name: 'RoleCreate',
+        component: () => import('@/pages/roles/RoleForm.vue'),
+        meta: { requiredRoles: ['Administrator'] },
+      },
+      {
+        path: 'roles/:id/edit',
+        name: 'RoleEdit',
+        component: () => import('@/pages/roles/RoleForm.vue'),
+        meta: { requiredRoles: ['Administrator'] },
+      },
+    ],
   },
 ];
 

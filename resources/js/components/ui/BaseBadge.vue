@@ -4,30 +4,27 @@ defineProps({
     type: String,
     default: 'default',
     validator: (value) =>
-      ['default', 'success', 'warning', 'danger', 'info', 'pending', 'approved', 'rejected'].includes(value),
+      ['default', 'success', 'warning', 'danger', 'info'].includes(value),
   },
   size: {
     type: String,
-    default: 'md',
-    validator: (value) => ['sm', 'md', 'lg'].includes(value),
+    default: 'sm',
+    validator: (value) => ['xs', 'sm', 'md'].includes(value),
   },
 });
 
 const variantClasses = {
-  default: 'bg-gray-100 text-gray-800',
-  success: 'bg-green-100 text-green-800',
-  warning: 'bg-yellow-100 text-yellow-800',
-  danger: 'bg-red-100 text-red-800',
-  info: 'bg-blue-100 text-blue-800',
-  pending: 'bg-yellow-100 text-yellow-800',
-  approved: 'bg-green-100 text-green-800',
-  rejected: 'bg-red-100 text-red-800',
+  default: 'bg-slate-100 text-slate-700 border border-slate-200',
+  success: 'bg-success-50 text-success-700 border border-success-200',
+  warning: 'bg-warning-50 text-warning-700 border border-warning-200',
+  danger: 'bg-danger-50 text-danger-700 border border-danger-200',
+  info: 'bg-info-50 text-info-700 border border-info-200',
 };
 
 const sizeClasses = {
-  sm: 'px-2 py-0.5 text-xs',
-  md: 'px-2.5 py-1 text-sm',
-  lg: 'px-3 py-1.5 text-base',
+  xs: 'px-2 py-0.5 text-[10px]',
+  sm: 'px-2.5 py-0.5 text-xs',
+  md: 'px-3 py-1 text-sm',
 };
 </script>
 

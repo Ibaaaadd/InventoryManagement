@@ -1,9 +1,11 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import { Save, X, ArrowLeft, Info } from 'lucide-vue-next';
 import BaseCard from '@/components/ui/BaseCard.vue';
 import BaseInput from '@/components/ui/BaseInput.vue';
-import BaseSelect from '@/components/ui/BaseSelect.vue';
+import BaseSearchableSelect from '@/components/ui/BaseSearchableSelect.vue';
+import BaseTextarea from '@/components/ui/BaseTextarea.vue';
 import BaseButton from '@/components/ui/BaseButton.vue';
 import FileUploadPdf from '@/components/ui/FileUploadPdf.vue';
 
@@ -126,22 +128,38 @@ const handleDocumentError = (error) => {
 
 <template>
   <div class="space-y-6">
-    <div>
-      <h1 class="text-2xl font-bold text-gray-900">{{ pageTitle }}</h1>
-      <p class="mt-1 text-sm text-gray-600">
-        {{ isEdit ? 'Update stock mutation information' : 'Record a new stock movement with supporting documentation' }}
-      </p>
+    <div class="flex items-center gap-4">
+      <button
+        @click="handleCancel"
+        class="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+      >
+        <ArrowLeft :size="20" />
+      </button>
+      <div>
+        <h1 class="text-2xl font-bold text-slate-900 tracking-tight">{{ pageTitle }}</h1>
+        <p class="text-sm text-slate-600 mt-1">
+          {{ isEdit ? 'Update stock mutation information' : 'Record a new stock movement with supporting documentation' }}
+        </p>
+      </div>
     </div>
 
-    <BaseCard :padding="true" :shadow="true">
-      <form @submit.prevent="handleSubmit" class="space-y-6">
-        <div v-if="errors.submit" class="p-3 bg-red-50 border border-red-200 rounded-lg">
-          <p class="text-sm text-red-600">{{ errors.submit }}</p>
+    <BaseCard>
+      <div v-if="loading" class="space-y-4">
+        <div class="animate-pulse space-y-4">
+          <div class="h-10 bg-slate-200 rounded"></div>
+          <div class="h-10 bg-slate-200 rounded"></div>
+          <div class="h-24 bg-slate-200 rounded"></div>
+        </div>
+      </div>
+
+      <form v-else @submit.prevent="handleSubmit" class="space-y-6">
+        <div v-if="errors.submit" class="p-3 bg-danger-50 border border-danger-200 rounded-lg">
+          <p class="text-sm text-danger-600">{{ errors.submit }}</p>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div class="md:col-span-2">
-            <BaseSelect
+            <BaseSearchableSelect
               v-model="form.item_id"
               label="Item"
               placeholder="Select an item"
@@ -150,10 +168,10 @@ const handleDocumentError = (error) => {
               :disabled="loading || isEdit"
               required
             />
-            <p class="mt-1 text-xs text-gray-500">Select the item for this stock mutation</p>
+            <p class="mt-1 text-xs text-slate-500">Select the item for this stock mutation</p>
           </div>
 
-          <BaseSelect
+          <BaseSearchableSelect
             v-model="form.type"
             label="Mutation Type"
             placeholder="Select type"
@@ -183,23 +201,17 @@ const handleDocumentError = (error) => {
           />
         </div>
 
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">
-            Notes
-            <span class="text-gray-500 font-normal">(Optional)</span>
-          </label>
-          <textarea
-            v-model="form.notes"
-            rows="4"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-            placeholder="Enter any additional notes or remarks about this mutation..."
-            :disabled="loading"
-          ></textarea>
-          <p class="mt-1 text-xs text-gray-500">Provide context, supplier information, or other relevant details</p>
-        </div>
+        <BaseTextarea
+          v-model="form.notes"
+          label="Notes"
+          :rows="4"
+          placeholder="Enter any additional notes or remarks about this mutation..."
+          :disabled="loading"
+          hint="Provide context, supplier information, or other relevant details"
+        />
 
-        <div class="border-t pt-6">
-          <h3 class="text-lg font-medium text-gray-900 mb-4">Supporting Document</h3>
+        <div class="border-t border-slate-200 pt-6">
+          <h3 class="text-lg font-medium text-slate-900 mb-4">Supporting Document</h3>
           <FileUploadPdf
             v-model="form.document"
             label="Upload PDF Document"
@@ -210,38 +222,37 @@ const handleDocumentError = (error) => {
             :max-size="500"
             @error="handleDocumentError"
           />
-          <p class="mt-2 text-xs text-gray-500">
+          <p class="mt-2 text-xs text-slate-500">
             Upload supporting documentation such as delivery notes, invoices, or authorization forms (PDF only, 100KB-500KB)
           </p>
         </div>
 
-        <div class="flex justify-end gap-3 pt-4 border-t">
+        <div class="flex items-center gap-3 pt-4 border-t border-slate-200">
+          <BaseButton
+            type="submit"
+            :loading="submitting"
+            :disabled="submitting"
+          >
+            <Save :size="18" />
+            {{ isEdit ? 'Update Mutation' : 'Create Mutation' }}
+          </BaseButton>
           <BaseButton
             type="button"
-            variant="secondary"
+            variant="ghost"
             @click="handleCancel"
             :disabled="submitting"
           >
+            <X :size="18" />
             Cancel
-          </BaseButton>
-          <BaseButton
-            type="submit"
-            variant="primary"
-            :loading="submitting"
-            :disabled="loading || submitting"
-          >
-            {{ isEdit ? 'Update Mutation' : 'Create Mutation' }}
           </BaseButton>
         </div>
 
-        <div v-if="!isEdit" class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div v-if="!isEdit" class="bg-info-50 border border-info-200 rounded-lg p-4">
           <div class="flex">
-            <svg class="w-5 h-5 text-blue-600 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+            <Info :size="20" class="text-info-600 mr-3 mt-0.5 flex-shrink-0" />
             <div>
-              <h4 class="text-sm font-medium text-blue-900">Important Information</h4>
-              <p class="mt-1 text-sm text-blue-700">
+              <h4 class="text-sm font-medium text-info-900">Important Information</h4>
+              <p class="mt-1 text-sm text-info-700">
                 Once submitted, this mutation will be sent to managers for approval. Ensure all information is accurate and complete before submitting.
               </p>
             </div>
