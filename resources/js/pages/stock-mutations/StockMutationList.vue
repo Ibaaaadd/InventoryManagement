@@ -3,6 +3,7 @@ import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { Plus, Eye } from "lucide-vue-next";
 import { useStatusBadge } from "@/composables/useStatusBadge";
+import { useDateFormat } from "@/composables/useDateFormat";
 import BaseCard from "@/components/ui/BaseCard.vue";
 import DataTable from "@/components/ui/DataTable.vue";
 import BaseButton from "@/components/ui/BaseButton.vue";
@@ -12,6 +13,7 @@ import SearchFilterBar from "@/components/ui/SearchFilterBar.vue";
 
 const router = useRouter();
 const { getVariant } = useStatusBadge();
+const { formatDate } = useDateFormat();
 
 const mutations = ref([]);
 const loading = ref(false);
@@ -189,6 +191,10 @@ const getTypeVariant = (type) => {
                 <BaseBadge :variant="getVariant(value)">
                     {{ value }}
                 </BaseBadge>
+            </template>
+
+            <template #cell-date="{ value }">
+                {{ formatDate(value) }}
             </template>
 
             <template #cell-quantity="{ value, row }">

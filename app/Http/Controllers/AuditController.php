@@ -21,25 +21,7 @@ class AuditController extends Controller
 
         $audits = $query->with('user')
             ->orderBy('created_at', 'desc')
-            ->get()
-            ->map(function ($audit) {
-                $changes = [];
-                foreach ($audit->getModified() as $field => $values) {
-                    $changes[] = [
-                        'field' => $field,
-                        'old_value' => $values['old'] ?? null,
-                        'new_value' => $values['new'] ?? null,
-                    ];
-                }
-
-                return [
-                    'id' => $audit->id,
-                    'event' => $audit->event,
-                    'user_name' => $audit->user?->name ?? 'System',
-                    'changes' => $changes,
-                    'created_at' => $audit->created_at,
-                ];
-            });
+            ->paginate($request->per_page ?? 5);
 
         return response()->json($audits);
     }

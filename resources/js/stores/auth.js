@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import axios from '@/lib/axios';
+import axios, { getCsrfCookie } from '@/lib/axios';
 
 export const useAuthStore = defineStore('auth', {
     state: () => ({
@@ -16,7 +16,7 @@ export const useAuthStore = defineStore('auth', {
         async fetchUser() {
             try {
                 this.loading = true;
-                const response = await axios.get('/user');
+                const response = await axios.get('/user', { skipAuthErrorHandling: true });
                 this.user = response.data.user;
                 return response.data.user;
             } catch (error) {
@@ -30,7 +30,7 @@ export const useAuthStore = defineStore('auth', {
         async login(email, password) {
             try {
                 this.loading = true;
-                await axios.get('/sanctum/csrf-cookie');
+                await getCsrfCookie();
                 const response = await axios.post('/login', { email, password });
                 this.user = response.data.user;
                 return response.data;

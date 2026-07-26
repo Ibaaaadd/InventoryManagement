@@ -2,6 +2,8 @@
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuth } from '@/composables/useAuth';
+import { useDateFormat } from '@/composables/useDateFormat';
+import { showWarning } from '@/lib/swal';
 import BaseCard from '@/components/ui/BaseCard.vue';
 import BaseBadge from '@/components/ui/BaseBadge.vue';
 import BaseButton from '@/components/ui/BaseButton.vue';
@@ -12,6 +14,7 @@ import AuditTrailPanel from '@/components/ui/AuditTrailPanel.vue';
 const route = useRoute();
 const router = useRouter();
 const { isManager, isStaff } = useAuth();
+const { formatDateTime } = useDateFormat();
 
 const mutation = ref(null);
 const loading = ref(false);
@@ -57,7 +60,7 @@ const openApprovalModal = (action) => {
 
 const handleApproval = async () => {
   if (approvalAction.value === 'reject' && !approvalReason.value) {
-    alert('Please provide a reason for rejection');
+    showWarning('Please provide a reason for rejection');
     return;
   }
 
@@ -155,7 +158,7 @@ const getTypeVariant = (type) => {
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700">Created At</label>
-            <p class="mt-1 text-sm text-gray-900">{{ mutation.created_at }}</p>
+            <p class="mt-1 text-sm text-gray-900">{{ formatDateTime(mutation.created_at) }}</p>
           </div>
           <div v-if="mutation.document_url">
             <label class="block text-sm font-medium text-gray-700">Supporting Document</label>

@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router';
 import { Package, Clock, CheckCircle, Users, Eye } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth';
 import { useStatusBadge } from '@/composables/useStatusBadge';
+import { useDateFormat } from '@/composables/useDateFormat';
 import BaseCard from '@/components/ui/BaseCard.vue';
 import BaseBadge from '@/components/ui/BaseBadge.vue';
 import BaseButton from '@/components/ui/BaseButton.vue';
@@ -12,6 +13,7 @@ import DataTable from '@/components/ui/DataTable.vue';
 const router = useRouter();
 const authStore = useAuthStore();
 const { getVariant, formatStatus } = useStatusBadge();
+const { formatDate } = useDateFormat();
 
 const stats = ref({
   totalItems: 0,
@@ -131,6 +133,9 @@ const tableColumns = [
           <BaseBadge :variant="getVariant(row.status)">
             {{ formatStatus(row.status) }}
           </BaseBadge>
+        </template>
+        <template #cell-date="{ value }">
+          {{ formatDate(value) }}
         </template>
         <template #actions="{ row }">
           <button

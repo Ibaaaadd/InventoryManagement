@@ -37,6 +37,7 @@ class UserController extends Controller
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8|confirmed',
             'role_id' => 'required|exists:roles,id',
+            'is_active' => 'sometimes|boolean',
         ]);
 
         $validated['password'] = Hash::make($validated['password']);
@@ -60,6 +61,7 @@ class UserController extends Controller
             'email' => 'required|email|unique:users,email,' . $user->id,
             'password' => 'nullable|string|min:8|confirmed',
             'role_id' => 'required|exists:roles,id',
+            'is_active' => 'sometimes|boolean',
         ]);
 
         if (!empty($validated['password'])) {

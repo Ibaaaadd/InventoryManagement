@@ -79,4 +79,115 @@
   .btn-secondary {
     @apply bg-slate-200 hover:bg-slate-300 text-slate-800 font-medium py-2 px-4 rounded-lg transition-colors;
   }
+
+  .swal-custom-popup {
+    @apply rounded-xl shadow-xl border border-slate-200 font-[family-name:var(--font-family-body)];
+  }
+
+  .swal-custom-title {
+    @apply text-xl font-semibold text-slate-900 font-[family-name:var(--font-family-display)];
+  }
+
+  .swal-custom-text {
+    @apply text-sm text-slate-600;
+  }
+
+  .swal-custom-confirm {
+    @apply bg-primary-600 hover:bg-primary-700 text-white font-medium py-2.5 px-5 rounded-lg transition-all duration-200 shadow-sm hover:shadow;
+  }
+
+  .swal-custom-cancel {
+    @apply bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-medium py-2.5 px-5 rounded-lg transition-all duration-200;
+  }
+
+  .swal-custom-confirm-danger {
+    @apply bg-danger-600 hover:bg-danger-700 text-white font-medium py-2.5 px-5 rounded-lg transition-all duration-200 shadow-sm hover:shadow;
+  }
+
+  .swal-toast-popup {
+    @apply rounded-lg shadow-lg border border-slate-200 font-[family-name:var(--font-family-body)];
+  }
+
+  .swal-toast-title {
+    @apply text-sm font-medium;
+  }
+}
+
+.swal2-icon.swal2-success [class^='swal2-success-line'] {
+  background-color: var(--color-success-600) !important;
+}
+
+.swal2-icon.swal2-success .swal2-success-ring {
+  border-color: var(--color-success-200) !important;
+}
+
+.swal2-icon.swal2-error {
+  border-color: var(--color-danger-600) !important;
+  color: var(--color-danger-600) !important;
+}
+
+.swal2-icon.swal2-warning {
+  border-color: var(--color-warning-600) !important;
+  color: var(--color-warning-600) !important;
+}
+
+.swal2-icon.swal2-info {
+  border-color: var(--color-info-600) !important;
+  color: var(--color-info-600) !important;
+}
+
+.swal-show {
+  animation: swal-show-animation 0.2s;
+}
+
+.swal-hide {
+  animation: swal-hide-animation 0.15s;
+}
+
+.swal-backdrop-show {
+  animation: swal-backdrop-show-animation 0.2s;
+}
+
+.swal-backdrop-hide {
+  animation: swal-backdrop-hide-animation 0.15s;
+}
+
+@keyframes swal-show-animation {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes swal-hide-animation {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+@keyframes swal-backdrop-show-animation {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes swal-backdrop-hide-animation {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }

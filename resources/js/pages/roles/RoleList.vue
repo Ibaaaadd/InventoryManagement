@@ -2,6 +2,9 @@
 import { ref, computed, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
 import axios from "@/lib/axios";
+import { showError } from "@/lib/swal";
+import { useDateFormat } from "@/composables/useDateFormat";
+import { useToast } from "@/composables/useToast";
 import { Search, Plus, Pencil, Trash2 } from "lucide-vue-next";
 import BaseButton from "@/components/ui/BaseButton.vue";
 import BaseCard from "@/components/ui/BaseCard.vue";
@@ -11,6 +14,8 @@ import BaseModal from "@/components/ui/BaseModal.vue";
 import BaseInput from "@/components/ui/BaseInput.vue";
 
 const router = useRouter();
+const { formatDate } = useDateFormat();
+const { toastSuccess } = useToast();
 
 const roles = ref([]);
 const loading = ref(false);
@@ -43,14 +48,6 @@ const columns = [
 
 const filteredRoles = computed(() => roles.value);
 
-const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString("id-ID", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-    });
-};
-
 const handleEdit = (role) => {
     router.push({ name: "RoleEdit", params: { id: role.id } });
 };
@@ -69,11 +66,13 @@ const confirmDelete = async () => {
         
         roles.value = roles.value.filter((r) => r.id !== roleToDelete.value.id);
         
+        toastSuccess('Role Deleted', 'Role has been deleted successfully');
+        
         showDeleteModal.value = false;
         roleToDelete.value = null;
     } catch (error) {
         console.error("Failed to delete role:", error);
-        alert(error.response?.data?.message || "Failed to delete role. Please try again.");
+        showError(error.response?.data?.message || "Failed to delete role. Please try again.");
     } finally {
         loading.value = false;
     }

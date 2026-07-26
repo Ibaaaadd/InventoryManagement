@@ -2,19 +2,25 @@
 import { ref, onMounted, watch, computed } from "vue";
 import { useRouter } from "vue-router";
 import axios from "@/lib/axios";
+import { showError, showConfirm } from "@/lib/swal";
 import { Plus, Pencil, Trash2 } from "lucide-vue-next";
 import { useAuth } from "@/composables/useAuth";
 import { useStatusBadge } from "@/composables/useStatusBadge";
+import { useDateFormat } from "@/composables/useDateFormat";
+import { useToast } from "@/composables/useToast";
 import BaseCard from "@/components/ui/BaseCard.vue";
 import DataTable from "@/components/ui/DataTable.vue";
 import BaseButton from "@/components/ui/BaseButton.vue";
 import BaseBadge from "@/components/ui/BaseBadge.vue";
 import BasePagination from "@/components/ui/BasePagination.vue";
 import SearchFilterBar from "@/components/ui/SearchFilterBar.vue";
+import BaseModal from "@/components/ui/BaseModal.vue";
 
 const router = useRouter();
 const { isAdministrator } = useAuth();
 const { getVariant } = useStatusBadge();
+const { formatDate } = useDateFormat();
+const { toastSuccess } = useToast();
 
 const users = ref([]);
 const loading = ref(false);
@@ -23,6 +29,8 @@ const sortValue = ref("");
 const currentPage = ref(1);
 const perPage = ref(10);
 const total = ref(0);
+const showDeleteModal = ref(false);
+const userToDelete = ref(null);
 
 const sortOptions = [
     { value: "name_asc", label: "Name (A-Z)" },
@@ -35,7 +43,7 @@ const columns = [
     { key: "name", label: "Name", sortable: true },
     { key: "email", label: "Email", sortable: true },
     { key: "role", label: "Role", sortable: true },
-    { key: "status", label: "Status", sortable: false },
+    { key: "is_active", label: "Status", sortable: false },
     { key: "created_at", label: "Created At", sortable: true },
 ];
 
@@ -107,21 +115,37 @@ const handleEdit = (row) => {
     router.push(`/users/${row.id}/edit`);
 };
 
-const handleDelete = async (row) => {
-    if (!confirm(`Are you sure you want to delete user ${row.name}?`)) {
-        return;
-    }
-    
+const openDeleteModal = (row) => {
+    userToDelete.value = row;
+    showDeleteModal.value = true;
+};
+
+const confirmDelete = async () => {
+    if (!userToDelete.value) return;
+
     try {
         loading.value = true;
-        await axios.delete(`/users/${row.id}`);
+        await axios.delete(`/users/${userToDelete.value.id}`);
+        toastSuccess('User Deleted', 'User has been deleted successfully');
         fetchUsers();
+        
+        showDeleteModal.value = false;
+        userToDelete.value = null;
     } catch (error) {
         console.error("Failed to delete user:", error);
-        alert(error.response?.data?.message || "Failed to delete user. Please try again.");
+        showError(error.response?.data?.message || "Failed to delete user. Please try again.");
     } finally {
         loading.value = false;
     }
+};
+
+const cancelDelete = () => {
+    showDeleteModal.value = false;
+    userToDelete.value = null;
+};
+
+const handleDelete = (row) => {
+    openDeleteModal(row);
 };
 
 watch(searchQuery, () => {
@@ -175,16 +199,20 @@ const getRoleBadgeVariant = (role) => {
             @sort="handleSort"
             @row-click="handleRowClick"
         >
-            <template #cell-role="{ value }">
-                <BaseBadge :variant="getRoleBadgeVariant(value)">
-                    {{ value }}
+            <template #cell-role="{ row }">
+                <BaseBadge :variant="getRoleBadgeVariant(row.role?.name)">
+                    {{ row.role?.name || '-' }}
                 </BaseBadge>
             </template>
 
-            <template #cell-status="{ value }">
-                <BaseBadge :variant="getVariant(value)">
-                    {{ value }}
+            <template #cell-is_active="{ value }">
+                <BaseBadge :variant="value ? 'success' : 'default'">
+                    {{ value ? 'Active' : 'Inactive' }}
                 </BaseBadge>
+            </template>
+
+            <template #cell-created_at="{ value }">
+                {{ formatDate(value) }}
             </template>
 
             <template #actions="{ row }">
@@ -216,5 +244,24 @@ const getRoleBadgeVariant = (role) => {
                 />
             </template>
         </DataTable>
+
+        <BaseModal v-model="showDeleteModal" title="Delete User" size="sm">
+            <div class="space-y-4">
+                <p class="text-sm text-slate-600">
+                    Are you sure you want to delete user
+                    <strong>{{ userToDelete?.name }}</strong>?
+                    This action cannot be undone.
+                </p>
+            </div>
+
+            <template #footer>
+                <BaseButton variant="ghost" @click="cancelDelete">
+                    Cancel
+                </BaseButton>
+                <BaseButton variant="danger" @click="confirmDelete">
+                    Delete User
+                </BaseButton>
+            </template>
+        </BaseModal>
     </div>
 </template>

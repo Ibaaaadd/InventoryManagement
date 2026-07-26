@@ -17,6 +17,8 @@ const breadcrumbs = computed(() => {
   const paths = route.path.split('/').filter(Boolean);
   const crumbs = [{ name: 'Home', to: '/dashboard' }];
   
+  const isUuid = (str) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+  
   let currentPath = '';
   paths.forEach((path, index) => {
     currentPath += `/${path}`;
@@ -27,7 +29,7 @@ const breadcrumbs = computed(() => {
     if (path === 'stock-mutations') name = 'Stock Mutations';
     else if (path === 'create') name = 'Create';
     else if (path === 'edit') name = 'Edit';
-    else if (!isNaN(path)) return;
+    else if (!isNaN(path) || isUuid(path)) return;
     
     crumbs.push({ name, to: currentPath });
   });
@@ -103,7 +105,7 @@ useClickOutside(dropdownRef, closeDropdown);
                   {{ authStore.user?.name || 'User' }}
                 </p>
                 <p class="text-xs text-slate-500">
-                  {{ authStore.user?.role || 'Guest' }}
+                  {{ authStore.user?.role.name || 'Guest' }}
                 </p>
               </div>
               
@@ -114,7 +116,7 @@ useClickOutside(dropdownRef, closeDropdown);
                   </span>
                 </div>
                 <div 
-                  v-if="authStore.user?.role === 'Administrator'"
+                  v-if="authStore.user?.role?.name === 'Administrator'"
                   class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-warning-500 border-2 border-white rounded-full"
                   title="Administrator"
                 />

@@ -2,17 +2,21 @@
 import { ref, onMounted, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import axios from '@/lib/axios';
+import { showError } from '@/lib/swal';
 import { Save, X, ArrowLeft } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
+import { useToast } from '@/composables/useToast';
 import BaseCard from '@/components/ui/BaseCard.vue';
 import BaseInput from '@/components/ui/BaseInput.vue';
 import BaseSearchableSelect from '@/components/ui/BaseSearchableSelect.vue';
 import BaseButton from '@/components/ui/BaseButton.vue';
-import AuditTrailPanel from '@/components/AuditTrailPanel.vue';
+import BaseToggle from '@/components/ui/BaseToggle.vue';
+import AuditTrailPanel from '@/components/ui/AuditTrailPanel.vue';
 
 const router = useRouter();
 const route = useRoute();
 const { isAdministrator } = useAuth();
+const { toastSuccess } = useToast();
 
 const isEdit = computed(() => !!route.params.id);
 const pageTitle = computed(() => isEdit.value ? 'Edit User' : 'Create New User');
@@ -23,12 +27,13 @@ const form = ref({
   password: '',
   password_confirmation: '',
   role: '',
-  status: 'active',
+  is_active: true,
 });
 
 const errors = ref({});
 const loading = ref(false);
 const submitting = ref(false);
+const userName = ref('');
 
 const roleOptions = ref([]);
 
@@ -45,11 +50,6 @@ const fetchRoles = async () => {
   }
 };
 
-const statusOptions = [
-  { value: 'active', label: 'Active' },
-  { value: 'inactive', label: 'Inactive' },
-];
-
 onMounted(async () => {
   await fetchRoles();
   if (isEdit.value) {
@@ -63,20 +63,22 @@ const fetchUser = async () => {
     const response = await axios.get(`/users/${route.params.id}`);
     const user = response.data;
     
+    userName.value = user.name;
+    
     form.value = {
       name: user.name,
       email: user.email,
       role: user.role_id,
-      status: user.status || 'active',
+      is_active: user.is_active !== undefined ? user.is_active : true,
       password: '',
       password_confirmation: '',
     };
   } catch (error) {
     console.error('Failed to fetch user:', error);
     if (error.response?.status === 404) {
-      alert('User not found');
+      showError('User not found');
     } else {
-      alert('Failed to load user data');
+      showError('Failed to load user data');
     }
     router.push('/users');
   } finally {
@@ -125,7 +127,7 @@ const handleSubmit = async () => {
       name: form.value.name,
       email: form.value.email,
       role_id: form.value.role,
-      status: form.value.status,
+      is_active: form.value.is_active,
     };
 
     if (form.value.password) {
@@ -135,8 +137,10 @@ const handleSubmit = async () => {
 
     if (isEdit.value) {
       await axios.put(`/users/${route.params.id}`, payload);
+      toastSuccess('User Updated', 'User information has been updated successfully');
     } else {
       await axios.post('/users', payload);
+      toastSuccess('User Created', 'New user has been added successfully');
     }
 
     router.push('/users');
@@ -170,7 +174,7 @@ const handleCancel = () => {
       <div>
         <h1 class="text-2xl font-bold text-slate-900 tracking-tight">{{ pageTitle }}</h1>
         <p class="text-sm text-slate-600 mt-1">
-          {{ isEdit ? 'Update user information' : 'Add a new user to the system' }}
+          {{ 'Add a new user to the system' }}
         </p>
       </div>
     </div>
@@ -219,14 +223,14 @@ const handleCancel = () => {
             required
           />
 
-          <BaseSearchableSelect
-            v-model="form.status"
-            label="Status"
-            placeholder="Select status"
-            :options="statusOptions"
-            :disabled="loading"
-            required
-          />
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Status</label>
+            <BaseToggle
+              v-model="form.is_active"
+              label="User Account"
+              :disabled="loading"
+            />
+          </div>
         </div>
 
         <div class="border-t border-slate-200 pt-6">

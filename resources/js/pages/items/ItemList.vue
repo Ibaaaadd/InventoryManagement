@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
+import { showConfirm } from "@/lib/swal";
 import { Plus, Pencil, Trash2 } from "lucide-vue-next";
 import BaseCard from "@/components/ui/BaseCard.vue";
 import DataTable from "@/components/ui/DataTable.vue";
@@ -130,8 +131,13 @@ const handleEdit = (row) => {
     router.push(`/items/${row.id}/edit`);
 };
 
-const handleDelete = (row) => {
-    if (confirm(`Are you sure you want to delete ${row.name}?`)) {
+const handleDelete = async (row) => {
+    const confirmed = await showConfirm(
+        `Are you sure you want to delete <strong>${row.name}</strong>?`,
+        'Delete Item'
+    );
+    
+    if (confirmed) {
         console.log("Delete item:", row.id);
         fetchItems();
     }

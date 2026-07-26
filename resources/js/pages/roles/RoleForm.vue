@@ -2,15 +2,18 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import axios from '@/lib/axios';
+import { showError } from '@/lib/swal';
+import { useToast } from '@/composables/useToast';
 import { Save, X, ArrowLeft } from 'lucide-vue-next';
 import BaseButton from '@/components/ui/BaseButton.vue';
 import BaseCard from '@/components/ui/BaseCard.vue';
 import BaseInput from '@/components/ui/BaseInput.vue';
 import BaseTextarea from '@/components/ui/BaseTextarea.vue';
-import AuditTrailPanel from '@/components/AuditTrailPanel.vue';
+import AuditTrailPanel from '@/components/ui/AuditTrailPanel.vue';
 
 const router = useRouter();
 const route = useRoute();
+const { toastSuccess } = useToast();
 
 const isEditMode = computed(() => !!route.params.id);
 const pageTitle = computed(() => isEditMode.value ? 'Edit Role' : 'Create New Role');
@@ -27,6 +30,7 @@ const errors = ref({
 
 const loading = ref(false);
 const submitting = ref(false);
+const roleName = ref('');
 
 onMounted(async () => {
   if (isEditMode.value) {
@@ -35,16 +39,18 @@ onMounted(async () => {
       const response = await axios.get(`/roles/${route.params.id}`);
       const roleData = response.data;
       
+      roleName.value = roleData.name;
+      
       form.value.name = roleData.name;
       form.value.description = roleData.description;
-    } catch (error) {
-      console.error('Failed to fetch role:', error);
-      if (error.response?.status === 404) {
-        alert('Role not found');
-      } else {
-        alert('Failed to load role data');
-      }
-      router.push({ name: 'RoleList' });
+  } catch (error) {
+    console.error('Failed to fetch role:', error);
+    if (error.response?.status === 404) {
+      showError('Role not found');
+    } else {
+      showError('Failed to load role data');
+    }
+    router.push({ name: 'RoleList' });
     } finally {
       loading.value = false;
     }
@@ -79,8 +85,10 @@ const handleSubmit = async () => {
     
     if (isEditMode.value) {
       await axios.put(`/roles/${route.params.id}`, form.value);
+      toastSuccess('Role Updated', 'Role information has been updated successfully');
     } else {
       await axios.post('/roles', form.value);
+      toastSuccess('Role Created', 'New role has been added successfully');
     }
     
     router.push({ name: 'RoleList' });
@@ -90,7 +98,7 @@ const handleSubmit = async () => {
     if (error.response?.data?.errors) {
       errors.value = error.response.data.errors;
     } else {
-      alert(error.response?.data?.message || 'Failed to save role. Please try again.');
+      showError(error.response?.data?.message || 'Failed to save role. Please try again.');
     }
   } finally {
     submitting.value = false;
@@ -114,7 +122,7 @@ const handleCancel = () => {
       <div>
         <h1 class="text-2xl font-bold text-slate-900 tracking-tight">{{ pageTitle }}</h1>
         <p class="text-sm text-slate-600 mt-1">
-          {{ isEditMode ? 'Update role information and permissions' : 'Create a new role for system users' }}
+          {{ 'Create a new role for system users' }}
         </p>
       </div>
     </div>
