@@ -3,7 +3,7 @@ import { ref, onMounted, watch, computed } from "vue";
 import { useRouter } from "vue-router";
 import axios from "@/lib/axios";
 import { showError, showConfirm } from "@/lib/swal";
-import { Plus, Pencil, Trash2 } from "lucide-vue-next";
+import { Plus, Pencil, Trash2, Download, Upload } from "lucide-vue-next";
 import { useAuth } from "@/composables/useAuth";
 import { useStatusBadge } from "@/composables/useStatusBadge";
 import { useDateFormat } from "@/composables/useDateFormat";
@@ -15,6 +15,8 @@ import BaseBadge from "@/components/ui/BaseBadge.vue";
 import BasePagination from "@/components/ui/BasePagination.vue";
 import SearchFilterBar from "@/components/ui/SearchFilterBar.vue";
 import BaseModal from "@/components/ui/BaseModal.vue";
+import ExportModal from "@/components/ui/ExportModal.vue";
+import ImportModal from "@/components/ui/ImportModal.vue";
 
 const router = useRouter();
 const { isAdministrator } = useAuth();
@@ -31,6 +33,8 @@ const perPage = ref(10);
 const total = ref(0);
 const showDeleteModal = ref(false);
 const userToDelete = ref(null);
+const showExportModal = ref(false);
+const showImportModal = ref(false);
 
 const sortOptions = [
     { value: "name_asc", label: "Name (A-Z)" },
@@ -144,6 +148,23 @@ const cancelDelete = () => {
     userToDelete.value = null;
 };
 
+const openExportModal = () => {
+    showExportModal.value = true;
+};
+
+const openImportModal = () => {
+    showImportModal.value = true;
+};
+
+const handleExported = (jobId) => {
+    router.push({ name: 'ExportImportHistory' });
+};
+
+const handleImported = (jobId) => {
+    fetchUsers();
+    router.push({ name: 'ExportImportHistory' });
+};
+
 const handleDelete = (row) => {
     openDeleteModal(row);
 };
@@ -174,10 +195,20 @@ const getRoleBadgeVariant = (role) => {
                     Manage system users and their roles
                 </p>
             </div>
-            <BaseButton @click="navigateToCreate">
-                <Plus :size="18" />
-                Add User
-            </BaseButton>
+            <div class="flex items-center gap-2">
+                <BaseButton @click="openExportModal" variant="secondary">
+                    <Download :size="18" />
+                    Export
+                </BaseButton>
+                <BaseButton @click="openImportModal" variant="secondary">
+                    <Upload :size="18" />
+                    Import
+                </BaseButton>
+                <BaseButton @click="navigateToCreate">
+                    <Plus :size="18" />
+                    Add User
+                </BaseButton>
+            </div>
         </div>
 
         <BaseCard>
@@ -263,5 +294,17 @@ const getRoleBadgeVariant = (role) => {
                 </BaseButton>
             </template>
         </BaseModal>
+
+        <ExportModal 
+            v-model="showExportModal" 
+            model="user" 
+            @exported="handleExported"
+        />
+
+        <ImportModal 
+            v-model="showImportModal" 
+            model="user" 
+            @imported="handleImported"
+        />
     </div>
 </template>

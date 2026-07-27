@@ -55,7 +55,7 @@ const getProgressColor = (type) => {
       <div
         v-for="toast in toasts"
         :key="toast.id"
-        class="w-96 max-w-[90vw] bg-white rounded-lg shadow-lg border-l-4 pointer-events-auto overflow-hidden"
+        class="w-96 max-w-[90vw] bg-white rounded-lg shadow-lg pointer-events-auto overflow-hidden"
         :class="getBorderColor(toast.type)"
       >
         <div class="p-4">

@@ -8,6 +8,7 @@ import {
   ArrowRightLeft, 
   Users,
   ShieldCheck,
+  FolderSync,
 } from 'lucide-vue-next';
 
 const route = useRoute();
@@ -51,6 +52,16 @@ const navigation = computed(() => [
         name: 'Users',
         to: '/users',
         icon: Users,
+      },
+    ],
+  },
+  {
+    section: 'HISTORY',
+    items: [
+      {
+        name: 'Export Import',
+        to: '/export-import-history',
+        icon: FolderSync,
       },
     ],
   },

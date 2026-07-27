@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Role;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class RoleController extends Controller
 {
@@ -23,7 +24,7 @@ class RoleController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|min:3|unique:roles,name',
+            'name' => ['required', 'string', 'min:3', Rule::unique('roles', 'name')->whereNull('deleted_at')],
             'description' => 'nullable|string',
         ]);
 
@@ -41,7 +42,7 @@ class RoleController extends Controller
     public function update(Request $request, Role $role)
     {
         $validated = $request->validate([
-            'name' => 'required|string|min:3|unique:roles,name,' . $role->id,
+            'name' => ['required', 'string', 'min:3', Rule::unique('roles', 'name')->ignore($role->id)->whereNull('deleted_at')],
             'description' => 'nullable|string',
         ]);
 

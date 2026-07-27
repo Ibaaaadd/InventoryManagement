@@ -5,13 +5,15 @@ import axios from "@/lib/axios";
 import { showError } from "@/lib/swal";
 import { useDateFormat } from "@/composables/useDateFormat";
 import { useToast } from "@/composables/useToast";
-import { Search, Plus, Pencil, Trash2 } from "lucide-vue-next";
+import { Search, Plus, Pencil, Trash2, Download, Upload } from "lucide-vue-next";
 import BaseButton from "@/components/ui/BaseButton.vue";
 import BaseCard from "@/components/ui/BaseCard.vue";
 import DataTable from "@/components/ui/DataTable.vue";
 import BaseBadge from "@/components/ui/BaseBadge.vue";
 import BaseModal from "@/components/ui/BaseModal.vue";
 import BaseInput from "@/components/ui/BaseInput.vue";
+import ExportModal from "@/components/ui/ExportModal.vue";
+import ImportModal from "@/components/ui/ImportModal.vue";
 
 const router = useRouter();
 const { formatDate } = useDateFormat();
@@ -22,6 +24,8 @@ const loading = ref(false);
 const searchQuery = ref("");
 const showDeleteModal = ref(false);
 const roleToDelete = ref(null);
+const showExportModal = ref(false);
+const showImportModal = ref(false);
 
 const fetchRoles = async () => {
     try {
@@ -83,6 +87,23 @@ const cancelDelete = () => {
     roleToDelete.value = null;
 };
 
+const openExportModal = () => {
+    showExportModal.value = true;
+};
+
+const openImportModal = () => {
+    showImportModal.value = true;
+};
+
+const handleExported = (jobId) => {
+    router.push({ name: 'ExportImportHistory' });
+};
+
+const handleImported = (jobId) => {
+    fetchRoles();
+    router.push({ name: 'ExportImportHistory' });
+};
+
 watch(searchQuery, () => {
     fetchRoles();
 });
@@ -103,10 +124,20 @@ onMounted(() => {
                     Manage user roles and permissions
                 </p>
             </div>
-            <BaseButton @click="router.push({ name: 'RoleCreate' })">
-                <Plus :size="18" />
-                Add Role
-            </BaseButton>
+            <div class="flex items-center gap-2">
+                <BaseButton @click="openExportModal" variant="secondary">
+                    <Download :size="18" />
+                    Export
+                </BaseButton>
+                <BaseButton @click="openImportModal" variant="secondary">
+                    <Upload :size="18" />
+                    Import
+                </BaseButton>
+                <BaseButton @click="router.push({ name: 'RoleCreate' })">
+                    <Plus :size="18" />
+                    Add Role
+                </BaseButton>
+            </div>
         </div>
 
         <BaseCard>
@@ -201,5 +232,17 @@ onMounted(() => {
                 </BaseButton>
             </template>
         </BaseModal>
+
+        <ExportModal 
+            v-model="showExportModal" 
+            model="role" 
+            @exported="handleExported"
+        />
+
+        <ImportModal 
+            v-model="showImportModal" 
+            model="role" 
+            @imported="handleImported"
+        />
     </div>
 </template>

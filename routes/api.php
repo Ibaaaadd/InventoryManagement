@@ -6,6 +6,8 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AuditController;
+use App\Http\Controllers\ExportController;
+use App\Http\Controllers\ImportController;
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
@@ -15,4 +17,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('roles', RoleController::class);
     Route::apiResource('users', UserController::class)->middleware('administrator');
     Route::get('audits', [AuditController::class, 'index']);
+    
+    Route::post('export/{model}', [ExportController::class, 'exportModel']);
+    Route::get('export/{model}/fields', [ExportController::class, 'getExportableFields']);
+    
+    Route::post('import/{model}/preview', [ImportController::class, 'preview']);
+    Route::post('import/{model}/confirm', [ImportController::class, 'confirm']);
+    Route::get('import/{model}/fields', [ImportController::class, 'getImportableFields']);
+    
+    Route::get('export-import-jobs', [ExportController::class, 'getJobs']);
+    Route::get('export-import-jobs/{id}', [ExportController::class, 'getJob']);
+    Route::get('export-import-jobs/{id}/download', [ExportController::class, 'downloadExport']);
 });

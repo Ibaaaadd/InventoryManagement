@@ -95,6 +95,11 @@ const routes = [
         name: 'RoleEdit',
         component: () => import('@/pages/roles/RoleForm.vue'),
       },
+      {
+        path: 'export-import-history',
+        name: 'ExportImportHistory',
+        component: () => import('@/pages/ExportImportHistory.vue'),
+      },
     ],
   },
 ];

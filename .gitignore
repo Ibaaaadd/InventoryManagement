@@ -31,6 +31,11 @@ storage/logs/*.log
 /.idea
 /.vscode
 
+# IDE Helper
+_ide_helper.php
+_ide_helper_models.php
+.phpstorm.meta.php
+
 # OS files
 .DS_Store
 Thumbs.db

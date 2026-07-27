@@ -1,6 +1,8 @@
 import axios from 'axios';
-import { showError } from './swal';
+import { useToast } from '@/composables/useToast';
 import router from '@/router';
+
+const { toastError } = useToast();
 
 const instance = axios.create({
     baseURL: '/api',
@@ -32,7 +34,7 @@ instance.interceptors.response.use(
             switch (status) {
                 case 401:
                     if (!error.config?.skipAuthErrorHandling) {
-                        showError('Your session has expired. Please log in again.', 'Authentication Required');
+                        toastError('Authentication Required', 'Your session has expired. Please log in again.');
                         setTimeout(() => {
                             router.push({ name: 'Login' });
                         }, 2000);
@@ -40,11 +42,11 @@ instance.interceptors.response.use(
                     break;
 
                 case 403:
-                    showError('You do not have permission to perform this action.', 'Access Denied');
+                    toastError('Access Denied', 'You do not have permission to perform this action.');
                     break;
 
                 case 419:
-                    showError('Your session has expired. Please refresh the page and try again.', 'CSRF Token Mismatch');
+                    toastError('CSRF Token Mismatch', 'Your session has expired. Please refresh the page and try again.');
                     break;
 
                 case 422:
@@ -54,16 +56,16 @@ instance.interceptors.response.use(
                 case 502:
                 case 503:
                 case 504:
-                    showError('A server error occurred. Please try again later.', 'Server Error');
+                    toastError('Server Error', 'A server error occurred. Please try again later.');
                     break;
 
                 default:
                     if (status >= 400) {
-                        showError(message, 'Error');
+                        toastError('Error', message);
                     }
             }
         } else if (error.request) {
-            showError('Unable to connect to the server. Please check your internet connection.', 'Network Error');
+            toastError('Network Error', 'Unable to connect to the server. Please check your internet connection.');
         }
 
         return Promise.reject(error);
