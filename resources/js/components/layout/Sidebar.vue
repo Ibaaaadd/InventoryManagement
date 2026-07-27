@@ -2,6 +2,7 @@
 import { computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { useUIStore } from '@/stores/ui';
+import { useAuth } from '@/composables/useAuth';
 import { 
   LayoutDashboard, 
   Package, 
@@ -13,6 +14,9 @@ import {
 
 const route = useRoute();
 const uiStore = useUIStore();
+const { isAdministrator } = useAuth();
+
+const logoUrl = '/image/logo.png';
 
 const navigation = computed(() => [
   {
@@ -40,21 +44,22 @@ const navigation = computed(() => [
       },
     ],
   },
-  {
-    section: 'ADMINISTRASI',
-    items: [
-      {
-        name: 'Role Management',
-        to: '/roles',
-        icon: ShieldCheck,
-      },
-      {
-        name: 'Users',
-        to: '/users',
-        icon: Users,
-      },
-    ],
-  },
+{
+      section: 'ADMINISTRASI',
+      items: [
+        {
+          name: 'Role Management',
+          to: '/roles',
+          icon: ShieldCheck,
+        },
+        {
+          name: 'Users',
+          to: '/users',
+          icon: Users,
+          adminOnly: true,
+        },
+      ],
+    },
   {
     section: 'HISTORY',
     items: [
@@ -66,6 +71,13 @@ const navigation = computed(() => [
     ],
   },
 ]);
+
+const visibleItems = computed(() => {
+  return navigation.value.map(group => ({
+    ...group,
+    items: group.items.filter(item => !item.adminOnly || isAdministrator.value)
+  })).filter(group => group.items.length > 0);
+});
 
 const isActive = (path) => {
   return route.path === path || route.path.startsWith(path + '/');
@@ -81,20 +93,21 @@ onMounted(() => {
     class="bg-slate-900 min-h-screen flex flex-col transition-all duration-300 ease-in-out"
     :class="uiStore.sidebarCollapsed ? 'w-20' : 'w-64'"
   >
-    <div class="px-6 py-6 flex items-center justify-between">
-      <div v-show="!uiStore.sidebarCollapsed" class="transition-opacity duration-200">
-        <h2 class="text-xl font-bold text-white tracking-tight">IMS</h2>
-        <p class="text-xs text-slate-400 mt-0.5">Inventory Management</p>
-      </div>
-      <div v-show="uiStore.sidebarCollapsed" class="mx-auto">
-        <div class="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center">
-          <span class="text-white font-bold text-sm">I</span>
+    <div class="px-4 py-4">
+      <div v-show="!uiStore.sidebarCollapsed" class="flex items-center gap-3">
+        <img :src="logoUrl" alt="Logo" class="h-10 w-auto flex-shrink-0" />
+        <div class="min-w-0 flex-1">
+          <h2 class="text-lg font-bold text-white tracking-tight truncate">IMS</h2>
+          <p class="text-xs font-bold text-slate-400 truncate">Inventory Management</p>
         </div>
+      </div>
+      <div v-show="uiStore.sidebarCollapsed" class="flex justify-center">
+        <img :src="logoUrl" alt="Logo" class="h-10 w-auto" />
       </div>
     </div>
 
     <nav class="flex-1 px-3 space-y-6 overflow-y-auto">
-      <div v-for="group in navigation" :key="group.section" class="space-y-1">
+      <div v-for="group in visibleItems" :key="group.section" class="space-y-1">
         <div 
           v-show="!uiStore.sidebarCollapsed" 
           class="px-3 py-2 text-[10px] font-semibold text-slate-500 uppercase tracking-wider"
