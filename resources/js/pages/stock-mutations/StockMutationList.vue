@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
 import { Plus, Eye } from "lucide-vue-next";
 import { useStatusBadge } from "@/composables/useStatusBadge";
@@ -8,7 +8,6 @@ import BaseCard from "@/components/ui/BaseCard.vue";
 import DataTable from "@/components/ui/DataTable.vue";
 import BaseButton from "@/components/ui/BaseButton.vue";
 import BaseBadge from "@/components/ui/BaseBadge.vue";
-import BasePagination from "@/components/ui/BasePagination.vue";
 import SearchFilterBar from "@/components/ui/SearchFilterBar.vue";
 
 const router = useRouter();
@@ -22,6 +21,8 @@ const sortValue = ref("");
 const currentPage = ref(1);
 const perPage = ref(10);
 const total = ref(0);
+
+const lastPage = computed(() => Math.ceil(total.value / perPage.value) || 1);
 
 const sortOptions = [
     { value: "date_desc", label: "Date (Newest First)" },
@@ -47,59 +48,41 @@ onMounted(() => {
 const fetchMutations = async () => {
     loading.value = true;
     try {
-        mutations.value = [
-            {
-                id: 1,
-                code: "MUT001",
-                item_name: "Laptop Dell XPS 15",
-                type: "IN",
-                quantity: 10,
-                status: "pending",
-                created_by: "John Doe",
-                date: "2026-07-25",
-            },
-            {
-                id: 2,
-                code: "MUT002",
-                item_name: "Mouse Wireless",
-                type: "OUT",
-                quantity: 5,
-                status: "approved",
-                created_by: "Jane Smith",
-                date: "2026-07-25",
-            },
-            {
-                id: 3,
-                code: "MUT003",
-                item_name: "Keyboard Mechanical",
-                type: "IN",
-                quantity: 8,
-                status: "pending",
-                created_by: "Mike Johnson",
-                date: "2026-07-24",
-            },
-            {
-                id: 4,
-                code: "MUT004",
-                item_name: "Monitor 27 inch",
-                type: "OUT",
-                quantity: 3,
-                status: "rejected",
-                created_by: "Sarah Williams",
-                date: "2026-07-24",
-            },
-            {
-                id: 5,
-                code: "MUT005",
-                item_name: "USB Cable Type-C",
-                type: "IN",
-                quantity: 50,
-                status: "approved",
-                created_by: "John Doe",
-                date: "2026-07-23",
-            },
+        // Mock data with more than 10 items to test pagination
+        const allMutations = [
+            { id: 1, code: "MUT001", item_name: "Laptop Dell XPS 15", type: "IN", quantity: 10, status: "pending", created_by: "John Doe", date: "2026-07-25" },
+            { id: 2, code: "MUT002", item_name: "Mouse Wireless", type: "OUT", quantity: 5, status: "approved", created_by: "Jane Smith", date: "2026-07-25" },
+            { id: 3, code: "MUT003", item_name: "Keyboard Mechanical", type: "IN", quantity: 8, status: "pending", created_by: "Mike Johnson", date: "2026-07-24" },
+            { id: 4, code: "MUT004", item_name: "Monitor 27 inch", type: "OUT", quantity: 3, status: "rejected", created_by: "Sarah Williams", date: "2026-07-24" },
+            { id: 5, code: "MUT005", item_name: "USB Cable Type-C", type: "IN", quantity: 50, status: "approved", created_by: "John Doe", date: "2026-07-23" },
+            { id: 6, code: "MUT006", item_name: "HDMI Cable 2m", type: "OUT", quantity: 15, status: "approved", created_by: "Mike Johnson", date: "2026-07-23" },
+            { id: 7, code: "MUT007", item_name: "Webcam Logitech C920", type: "IN", quantity: 20, status: "pending", created_by: "Sarah Williams", date: "2026-07-22" },
+            { id: 8, code: "MUT008", item_name: "Headset Razer Kraken", type: "OUT", quantity: 7, status: "approved", created_by: "John Doe", date: "2026-07-22" },
+            { id: 9, code: "MUT009", item_name: "SSD Samsung 1TB", type: "IN", quantity: 25, status: "approved", created_by: "Jane Smith", date: "2026-07-21" },
+            { id: 10, code: "MUT010", item_name: "RAM DDR4 16GB", type: "OUT", quantity: 4, status: "rejected", created_by: "Mike Johnson", date: "2026-07-21" },
+            { id: 11, code: "MUT011", item_name: "GPU RTX 4080", type: "IN", quantity: 3, status: "pending", created_by: "Sarah Williams", date: "2026-07-20" },
+            { id: 12, code: "MUT012", item_name: "CPU Intel i9-13900K", type: "OUT", quantity: 2, status: "approved", created_by: "John Doe", date: "2026-07-20" },
+            { id: 13, code: "MUT013", item_name: "Motherboard Z790", type: "IN", quantity: 10, status: "pending", created_by: "Jane Smith", date: "2026-07-19" },
+            { id: 14, code: "MUT014", item_name: "PSU 850W Gold", type: "OUT", quantity: 5, status: "approved", created_by: "Mike Johnson", date: "2026-07-19" },
+            { id: 15, code: "MUT015", item_name: "Case ATX Mid Tower", type: "IN", quantity: 12, status: "pending", created_by: "Sarah Williams", date: "2026-07-18" },
         ];
-        total.value = mutations.value.length;
+        
+        // Apply client-side search filter
+        let filteredMutations = allMutations;
+        if (searchQuery.value) {
+            const q = searchQuery.value.toLowerCase();
+            filteredMutations = allMutations.filter(m => 
+                m.code.toLowerCase().includes(q) || 
+                m.item_name.toLowerCase().includes(q)
+            );
+        }
+        
+        total.value = filteredMutations.length;
+        
+        // Apply client-side pagination
+        const start = (currentPage.value - 1) * perPage.value;
+        mutations.value = filteredMutations.slice(start, start + perPage.value);
+        
     } catch (error) {
         console.error("Failed to fetch mutations:", error);
     } finally {
@@ -178,8 +161,13 @@ const getTypeVariant = (type) => {
             :data="mutations"
             :loading="loading"
             empty-message="No stock mutations found"
+            :show-pagination="true"
+            :current-page="currentPage"
+            :last-page="lastPage"
+            :total="total"
             @sort="handleSort"
             @row-click="handleRowClick"
+            @page-change="handlePageChange"
         >
             <template #cell-type="{ value }">
                 <BaseBadge :variant="getTypeVariant(value)">
@@ -216,16 +204,6 @@ const getTypeVariant = (type) => {
                 >
                     <Eye :size="16" />
                 </button>
-            </template>
-
-            <template #pagination>
-                <BasePagination
-                    :current-page="currentPage"
-                    :total-pages="Math.ceil(total / perPage)"
-                    :per-page="perPage"
-                    :total="total"
-                    @page-change="handlePageChange"
-                />
             </template>
         </DataTable>
     </div>

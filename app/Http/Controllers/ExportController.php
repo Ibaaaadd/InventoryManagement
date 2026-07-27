@@ -59,14 +59,33 @@ class ExportController extends Controller
 
     public function getJobs(Request $request)
     {
-        $query = ExportImportJob::with('user')
-            ->orderBy('created_at', 'desc');
+        $query = ExportImportJob::with('user');
 
         if (auth()->user()->role->name !== 'Administrator') {
             $query->where('user_id', auth()->id());
         }
 
-        $jobs = $query->paginate(15);
+        if ($request->has('type') && in_array($request->type, ['export', 'import'])) {
+            $query->where('type', $request->type);
+        }
+
+        if ($request->has('model') && in_array($request->model, ['role', 'user'])) {
+            $query->where('model', $request->model);
+        }
+
+        if ($request->has('sort') && $request->has('order')) {
+            $sortField = $request->sort;
+            $sortDirection = $request->order;
+
+            $allowedSorts = ['type', 'model', 'status', 'created_at'];
+            if (in_array($sortField, $allowedSorts)) {
+                $query->orderBy($sortField, $sortDirection);
+            }
+        } else {
+            $query->orderBy('created_at', 'desc');
+        }
+
+        $jobs = $query->paginate($request->per_page ?? 10);
 
         return response()->json($jobs);
     }

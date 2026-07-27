@@ -12,6 +12,7 @@ import {
     Trash2,
     Download,
     Upload,
+    RefreshCw,
 } from "lucide-vue-next";
 import BaseButton from "@/components/ui/BaseButton.vue";
 import BaseCard from "@/components/ui/BaseCard.vue";
@@ -28,32 +29,38 @@ const { toastSuccess } = useToast();
 const roles = ref([]);
 const loading = ref(false);
 const searchQuery = ref("");
+const searchDebounceTimer = ref(null);
+const sortField = ref("");
+const sortDirection = ref("");
 const showDeleteModal = ref(false);
 const roleToDelete = ref(null);
 const showExportModal = ref(false);
 const showImportModal = ref(false);
 
 const currentPage = ref(1);
+const perPage = ref(10);
 const lastPage = ref(1);
 const total = ref(0);
 
 const fetchRoles = async () => {
     try {
         loading.value = true;
-        const params = { page: currentPage.value };
+        const params = { page: currentPage.value, per_page: perPage.value };
         if (searchQuery.value) {
             params.search = searchQuery.value;
         }
+        if (sortField.value && sortDirection.value) {
+            params.sort = sortField.value;
+            params.order = sortDirection.value;
+        }
         const response = await axios.get("/roles", { params });
 
-        // Handle paginated response if backend sends it
         if (response.data && response.data.data) {
             roles.value = response.data.data;
             currentPage.value = response.data.current_page || 1;
             lastPage.value = response.data.last_page || 1;
             total.value = response.data.total || 0;
         } else {
-            // Fallback if not paginated
             roles.value = response.data;
             currentPage.value = 1;
             lastPage.value = 1;
@@ -135,10 +142,27 @@ const handleImported = (jobId) => {
     router.push({ name: "ExportImportHistory" });
 };
 
-watch(searchQuery, () => {
+const handleSearchInput = () => {
+    if (searchDebounceTimer.value) {
+        clearTimeout(searchDebounceTimer.value);
+    }
+    
+    searchDebounceTimer.value = setTimeout(() => {
+        currentPage.value = 1;
+        fetchRoles();
+    }, 500);
+};
+
+const handleSort = (sortData) => {
+    sortField.value = sortData.key;
+    sortDirection.value = sortData.direction;
     currentPage.value = 1;
     fetchRoles();
-});
+};
+
+const handleRefresh = () => {
+    fetchRoles();
+};
 
 onMounted(() => {
     fetchRoles();
@@ -173,17 +197,28 @@ onMounted(() => {
         </div>
 
         <BaseCard>
-            <div class="relative">
-                <Search
-                    class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                    :size="20"
-                />
-                <input
-                    v-model="searchQuery"
-                    type="text"
-                    placeholder="Search roles..."
-                    class="w-full pl-10 pr-4 py-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
-                />
+            <div class="flex items-center gap-3">
+                <div class="relative flex-1">
+                    <Search
+                        class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" 
+                        :size="20"
+                    />
+                    <input
+                        v-model="searchQuery"
+                        @input="handleSearchInput"
+                        type="text"
+                        placeholder="Search roles..."
+                        class="w-full pl-10 pr-4 py-2.5 text-sm border focus:outline-none border-slate-300 rounded-lg focus:ring-1/2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+                    />
+                </div>
+                <button
+                    @click="handleRefresh"
+                    :disabled="loading"
+                    class="p-2.5 text-slate-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Refresh"
+                >
+                    <RefreshCw :size="20" :class="{ 'animate-spin': loading }" />
+                </button>
             </div>
         </BaseCard>
 
@@ -196,6 +231,7 @@ onMounted(() => {
             :current-page="currentPage"
             :last-page="lastPage"
             :total="total"
+            @sort="handleSort"
             @page-change="handlePageChange"
         >
             <template #cell-name="{ row }">

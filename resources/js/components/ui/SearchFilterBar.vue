@@ -49,7 +49,7 @@ const handleClear = () => {
                     @input="handleSearch($event.target.value)"
                     type="text"
                     :placeholder="placeholder"
-                    class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1/2 focus:ring-primary-500 focus:border-primary-500"
                 />
                 <div
                     class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"

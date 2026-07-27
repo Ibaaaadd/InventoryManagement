@@ -15,15 +15,31 @@ class UserController extends Controller
         $query = User::query()->with('role');
 
         if ($request->has('search')) {
-            $search = $request->search;
+            $search = strtolower($request->search);
             $query->where(function($q) use ($search) {
-                $q->where('name', 'like', '%' . $search . '%')
-                  ->orWhere('email', 'like', '%' . $search . '%');
+                $q->whereRaw('LOWER(name) LIKE ?', ['%' . $search . '%'])
+                  ->orWhereRaw('LOWER(email) LIKE ?', ['%' . $search . '%']);
             });
         }
 
         if ($request->has('role_id')) {
             $query->where('role_id', $request->role_id);
+        }
+
+        if ($request->has('sort') && $request->has('order')) {
+            $sortField = $request->sort;
+            $sortDirection = $request->order;
+
+            if ($sortField === 'role') {
+                $query->join('roles', 'users.role_id', '=', 'roles.id')
+                      ->select('users.*')
+                      ->orderBy('roles.name', $sortDirection);
+            } else {
+                $allowedSorts = ['name', 'email', 'created_at'];
+                if (in_array($sortField, $allowedSorts)) {
+                    $query->orderBy($sortField, $sortDirection);
+                }
+            }
         }
 
         $users = $query->paginate(10);

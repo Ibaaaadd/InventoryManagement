@@ -3,7 +3,7 @@ import { ref, onMounted, watch, computed } from "vue";
 import { useRouter } from "vue-router";
 import axios from "@/lib/axios";
 import { showError, showConfirm } from "@/lib/swal";
-import { Plus, Pencil, Trash2, Download, Upload } from "lucide-vue-next";
+import { Plus, Pencil, Trash2, Download, Upload, Search, RefreshCw } from "lucide-vue-next";
 import { useAuth } from "@/composables/useAuth";
 import { useStatusBadge } from "@/composables/useStatusBadge";
 import { useDateFormat } from "@/composables/useDateFormat";
@@ -12,7 +12,6 @@ import BaseCard from "@/components/ui/BaseCard.vue";
 import DataTable from "@/components/ui/DataTable.vue";
 import BaseButton from "@/components/ui/BaseButton.vue";
 import BaseBadge from "@/components/ui/BaseBadge.vue";
-import SearchFilterBar from "@/components/ui/SearchFilterBar.vue";
 import BaseModal from "@/components/ui/BaseModal.vue";
 import ExportModal from "@/components/ui/ExportModal.vue";
 import ImportModal from "@/components/ui/ImportModal.vue";
@@ -26,7 +25,11 @@ const { toastSuccess } = useToast();
 const users = ref([]);
 const loading = ref(false);
 const searchQuery = ref("");
-const sortValue = ref("");
+const searchDebounceTimer = ref(null);
+const sortField = ref("");
+const sortDirection = ref("");
+const filterRole = ref("");
+const roles = ref([]);
 const currentPage = ref(1);
 const lastPage = ref(1);
 const perPage = ref(10);
@@ -35,13 +38,6 @@ const showDeleteModal = ref(false);
 const userToDelete = ref(null);
 const showExportModal = ref(false);
 const showImportModal = ref(false);
-
-const sortOptions = [
-    { value: "name_asc", label: "Name (A-Z)" },
-    { value: "name_desc", label: "Name (Z-A)" },
-    { value: "role_asc", label: "Role (A-Z)" },
-    { value: "role_desc", label: "Role (Z-A)" },
-];
 
 const columns = [
     { key: "name", label: "Name", sortable: true },
@@ -52,8 +48,23 @@ const columns = [
 ];
 
 onMounted(() => {
+    fetchRoles();
     fetchUsers();
 });
+
+const fetchRoles = async () => {
+    try {
+        const response = await axios.get("/roles");
+        if (response.data && response.data.data) {
+            roles.value = response.data.data;
+        } else {
+            roles.value = response.data;
+        }
+    } catch (error) {
+        console.error("Failed to fetch roles:", error);
+        roles.value = [];
+    }
+};
 
 const fetchUsers = async () => {
     loading.value = true;
@@ -67,15 +78,17 @@ const fetchUsers = async () => {
             params.search = searchQuery.value;
         }
 
-        if (sortValue.value) {
-            const [field, direction] = sortValue.value.split("_");
-            params.sort = field;
-            params.order = direction;
+        if (filterRole.value) {
+            params.role_id = filterRole.value;
+        }
+
+        if (sortField.value && sortDirection.value) {
+            params.sort = sortField.value;
+            params.order = sortDirection.value;
         }
 
         const response = await axios.get("/users", { params });
 
-        // Handle paginated response if backend sends it
         if (response.data && response.data.data) {
             users.value = response.data.data;
             currentPage.value = response.data.current_page || 1;
@@ -98,20 +111,39 @@ const fetchUsers = async () => {
     }
 };
 
-const handleSearch = () => {
-    currentPage.value = 1;
-    fetchUsers();
+const handleSearchInput = () => {
+    if (searchDebounceTimer.value) {
+        clearTimeout(searchDebounceTimer.value);
+    }
+    
+    searchDebounceTimer.value = setTimeout(() => {
+        currentPage.value = 1;
+        fetchUsers();
+    }, 500);
 };
 
 const handleClear = () => {
     searchQuery.value = "";
-    sortValue.value = "";
+    sortField.value = "";
+    sortDirection.value = "";
+    filterRole.value = "";
     currentPage.value = 1;
     fetchUsers();
 };
 
-const handleSort = (columnKey) => {
-    console.log("Sort by:", columnKey);
+const handleFilterChange = () => {
+    currentPage.value = 1;
+    fetchUsers();
+};
+
+const handleSort = (sortData) => {
+    sortField.value = sortData.key;
+    sortDirection.value = sortData.direction;
+    currentPage.value = 1;
+    fetchUsers();
+};
+
+const handleRefresh = () => {
     fetchUsers();
 };
 
@@ -120,9 +152,7 @@ const handlePageChange = (page) => {
     fetchUsers();
 };
 
-const handleRowClick = (row) => {
-    router.push(`/users/${row.id}/edit`);
-};
+
 
 const navigateToCreate = () => {
     router.push("/users/create");
@@ -185,10 +215,7 @@ const handleDelete = (row) => {
     openDeleteModal(row);
 };
 
-watch(searchQuery, () => {
-    currentPage.value = 1;
-    fetchUsers();
-});
+
 
 const getRoleBadgeVariant = (role) => {
     const variants = {
@@ -228,14 +255,48 @@ const getRoleBadgeVariant = (role) => {
         </div>
 
         <BaseCard>
-            <SearchFilterBar
-                v-model:search-query="searchQuery"
-                v-model:sort-value="sortValue"
-                :sort-options="sortOptions"
-                placeholder="Search users by name or email..."
-                @search="handleSearch"
-                @clear="handleClear"
-            />
+            <div class="flex items-center gap-3">
+                <div class="relative flex-1">
+                    <Search
+                        class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                        :size="20"
+                    />
+                    <input
+                        v-model="searchQuery"
+                        @input="handleSearchInput"
+                        type="text"
+                        placeholder="Search users by name or email..."
+                        class="w-full pl-10 pr-4 py-2.5 text-sm border focus:outline-none border-slate-300 rounded-lg focus:ring-1/2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+                    />
+                </div>
+                <div class="min-w-[200px]">
+                    <select
+                        v-model="filterRole"
+                        @change="handleFilterChange"
+                        class="w-full pl-3 pr-9 py-2.5 text-sm border focus:outline-none border-slate-300 rounded-lg focus:ring-1/2 focus:ring-primary-500 focus:border-primary-500 transition-all bg-white appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23666%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e')] bg-[length:20px] bg-[center_right_0.75rem] bg-no-repeat"
+                    >
+                        <option value="">All Roles</option>
+                        <option v-for="role in roles" :key="role.id" :value="role.id">
+                            {{ role.name }}
+                        </option>
+                    </select>
+                </div>
+                <button
+                    @click="handleRefresh"
+                    :disabled="loading"
+                    class="p-2.5 text-slate-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Refresh"
+                >
+                    <RefreshCw :size="20" :class="{ 'animate-spin': loading }" />
+                </button>
+                <button
+                    v-if="searchQuery || filterRole"
+                    @click="handleClear"
+                    class="px-4 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors whitespace-nowrap"
+                >
+                    Clear
+                </button>
+            </div>
         </BaseCard>
 
         <DataTable
@@ -248,7 +309,6 @@ const getRoleBadgeVariant = (role) => {
             :last-page="lastPage"
             :total="total"
             @sort="handleSort"
-            @row-click="handleRowClick"
             @page-change="handlePageChange"
         >
             <template #cell-role="{ row }">

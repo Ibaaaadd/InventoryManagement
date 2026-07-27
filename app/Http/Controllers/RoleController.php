@@ -13,7 +13,20 @@ class RoleController extends Controller
         $query = Role::query()->withCount('users');
 
         if ($request->has('search')) {
-            $query->where('name', 'like', '%' . $request->search . '%');
+            $search = strtolower($request->search);
+            $query->whereRaw('LOWER(name) LIKE ?', ['%' . $search . '%']);
+        }
+
+        if ($request->has('sort') && $request->has('order')) {
+            $sortField = $request->sort;
+            $sortDirection = $request->order;
+
+            $allowedSorts = ['name', 'created_at'];
+            if (in_array($sortField, $allowedSorts)) {
+                $query->orderBy($sortField, $sortDirection);
+            } elseif ($sortField === 'users_count') {
+                $query->orderBy('users_count', $sortDirection);
+            }
         }
 
         $roles = $query->paginate(10);

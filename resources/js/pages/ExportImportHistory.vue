@@ -1,7 +1,7 @@
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from "vue";
+import { ref, onMounted, onUnmounted, computed, watch } from "vue";
 import { useToast } from "@/composables/useToast";
-import { Download, AlertCircle, RefreshCw, AlertTriangle, Eye } from "lucide-vue-next";
+import { Download, AlertCircle, RefreshCw, AlertTriangle, Eye, Filter, X } from "lucide-vue-next";
 import BaseCard from "@/components/ui/BaseCard.vue";
 import BaseButton from "@/components/ui/BaseButton.vue";
 import BaseBadge from "@/components/ui/BaseBadge.vue";
@@ -15,26 +15,43 @@ const { formatDate } = useDateFormat();
 const jobs = ref([]);
 const loading = ref(false);
 const currentPage = ref(1);
+const perPage = ref(10);
 const lastPage = ref(1);
 const total = ref(0);
 const pollingInterval = ref(null);
+const sortField = ref("");
+const sortDirection = ref("");
 
 const errorLogModal = ref(false);
 const selectedJob = ref(null);
 
+const filterType = ref('');
+const filterModel = ref('');
+
 const columns = [
-    { key: "type", label: "Tipe" },
-    { key: "model", label: "Model" },
-    { key: "status", label: "Status" },
+    { key: "type", label: "Tipe", sortable: true },
+    { key: "model", label: "Model", sortable: true },
+    { key: "status", label: "Status", sortable: true },
     { key: "progress", label: "Progress", sortable: false },
-    { key: "created_at", label: "Tanggal" },
+    { key: "created_at", label: "Tanggal", sortable: true },
 ];
 
 const fetchJobs = async () => {
     loading.value = true;
     try {
+        const params = new URLSearchParams({
+            page: currentPage.value,
+            per_page: perPage.value,
+        });
+        if (filterType.value) params.append('type', filterType.value);
+        if (filterModel.value) params.append('model', filterModel.value);
+        if (sortField.value && sortDirection.value) {
+            params.append('sort', sortField.value);
+            params.append('order', sortDirection.value);
+        }
+
         const response = await fetch(
-            `/api/export-import-jobs?page=${currentPage.value}`,
+            `/api/export-import-jobs?${params.toString()}`,
             {
                 credentials: "include",
             },
@@ -65,6 +82,30 @@ const handlePageChange = (page) => {
     currentPage.value = page;
     fetchJobs();
 };
+
+const handleFilterChange = () => {
+    currentPage.value = 1;
+    fetchJobs();
+};
+
+const handleSort = (sortData) => {
+    sortField.value = sortData.key;
+    sortDirection.value = sortData.direction;
+    currentPage.value = 1;
+    fetchJobs();
+};
+
+const clearFilters = () => {
+    filterType.value = '';
+    filterModel.value = '';
+    currentPage.value = 1;
+    fetchJobs();
+};
+
+const availableModels = computed(() => {
+    const models = [...new Set(jobs.value.map(job => job.model).filter(Boolean))];
+    return models.sort();
+});
 
 const hasProcessingJobs = computed(() => {
     return jobs.value.some((job) =>
@@ -160,25 +201,57 @@ onUnmounted(() => {
 
 <template>
     <div class="space-y-6">
-        <div class="flex justify-between items-center">
-            <div>
-                <h1 class="text-2xl font-bold text-slate-900">
-                    Riwayat Export/Import
-                </h1>
-                <p class="text-slate-600 mt-1">
-                    Pantau status proses export dan import data
-                </p>
-            </div>
-            <BaseButton
-                @click="handleRefresh"
-                variant="secondary"
-                :disabled="loading"
-                class="flex items-center gap-2"
-            >
-                <RefreshCw :size="16" :class="{ 'animate-spin': loading }" />
-                Refresh
-            </BaseButton>
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">
+                Riwayat Export/Import
+            </h1>
+            <p class="text-slate-600 mt-1">
+                Pantau status proses export dan import data
+            </p>
         </div>
+
+        <BaseCard>
+            <div class="flex items-center gap-3">
+                <div class="flex-1 min-w-[200px]">
+                    <select
+                        v-model="filterType"
+                        @change="handleFilterChange"
+                        class="w-full pl-3 pr-9 py-2.5 text-sm border focus:outline-none border-slate-300 rounded-lg focus:ring-1/2 focus:ring-primary-500 focus:border-primary-500 transition-all bg-white appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23666%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e')] bg-[length:20px] bg-[center_right_0.75rem] bg-no-repeat"
+                    >
+                        <option value="">Semua Tipe</option>
+                        <option value="export">Export</option>
+                        <option value="import">Import</option>
+                    </select>
+                </div>
+                <div class="flex-1 min-w-[200px]">
+                    <select
+                        v-model="filterModel"
+                        @change="handleFilterChange"
+                        class="w-full pl-3 pr-9 py-2.5 text-sm border focus:outline-none border-slate-300 rounded-lg focus:ring-1/2 focus:ring-primary-500 focus:border-primary-500 transition-all bg-white appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23666%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e')] bg-[length:20px] bg-[center_right_0.75rem] bg-no-repeat"
+                    >
+                        <option value="">Semua Model</option>
+                        <option v-for="model in availableModels" :key="model" :value="model">
+                            {{ model.charAt(0).toUpperCase() + model.slice(1) }}
+                        </option>
+                    </select>
+                </div>
+                <button
+                    @click="handleRefresh"
+                    :disabled="loading"
+                    class="p-2.5 text-slate-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Refresh"
+                >
+                    <RefreshCw :size="20" :class="{ 'animate-spin': loading }" />
+                </button>
+                <button
+                    v-if="filterType || filterModel"
+                    @click="clearFilters"
+                    class="px-4 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors whitespace-nowrap"
+                >
+                    Clear
+                </button>
+            </div>
+        </BaseCard>
 
         <DataTable
             :columns="columns"
@@ -189,6 +262,7 @@ onUnmounted(() => {
             :current-page="currentPage"
             :last-page="lastPage"
             :total="total"
+            @sort="handleSort"
             @page-change="handlePageChange"
         >
             <template #cell-type="{ row }">

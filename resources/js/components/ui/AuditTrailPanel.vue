@@ -115,6 +115,8 @@ const getFieldLabel = (field) => {
   const labels = {
     name: 'Nama',
     email: 'Email',
+    password: 'Password',
+    password_confirmation: 'Konfirmasi Password',
     role_id: 'Role',
     status: 'Status',
     is_active: 'Status Aktif',
@@ -151,11 +153,12 @@ const parseChanges = (oldValues, newValues) => {
     const newVal = newVals[key];
     
     if (oldVal !== newVal) {
+      const isPasswordField = key === 'password' || key === 'password_confirmation';
       changes.push({
         field: key,
         label: getFieldLabel(key),
-        oldValue: oldVal ?? '-',
-        newValue: newVal ?? '-',
+        oldValue: isPasswordField && oldVal ? '*****' : (oldVal ?? '-'),
+        newValue: isPasswordField && newVal ? '*****' : (newVal ?? '-'),
       });
     }
   });
@@ -236,10 +239,10 @@ const parseChanges = (oldValues, newValues) => {
                     class="bg-slate-50 rounded-md px-3 py-2.5 text-sm mb-2 last:mb-0"
                   >
                     <p class="font-medium text-slate-700 mb-1.5 text-xs uppercase tracking-wide">{{ change.label }}</p>
-                    <div class="flex items-center gap-2">
-                      <span class="text-slate-500 line-through text-sm">{{ change.oldValue }}</span>
+                    <div class="flex items-center gap-2 min-w-0">
+                      <span class="text-slate-500 line-through text-sm truncate max-w-[200px]" :title="change.oldValue">{{ change.oldValue }}</span>
                       <ArrowRight :size="14" class="text-slate-400 flex-shrink-0" />
-                      <span class="text-slate-900 font-medium text-sm">{{ change.newValue }}</span>
+                      <span class="text-slate-900 font-medium text-sm truncate max-w-[200px]" :title="change.newValue">{{ change.newValue }}</span>
                     </div>
                   </div>
                 </div>
