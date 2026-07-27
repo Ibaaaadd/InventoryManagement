@@ -12,7 +12,6 @@ import BaseCard from "@/components/ui/BaseCard.vue";
 import DataTable from "@/components/ui/DataTable.vue";
 import BaseButton from "@/components/ui/BaseButton.vue";
 import BaseBadge from "@/components/ui/BaseBadge.vue";
-import BasePagination from "@/components/ui/BasePagination.vue";
 import SearchFilterBar from "@/components/ui/SearchFilterBar.vue";
 import BaseModal from "@/components/ui/BaseModal.vue";
 import ExportModal from "@/components/ui/ExportModal.vue";
@@ -29,6 +28,7 @@ const loading = ref(false);
 const searchQuery = ref("");
 const sortValue = ref("");
 const currentPage = ref(1);
+const lastPage = ref(1);
 const perPage = ref(10);
 const total = ref(0);
 const showDeleteModal = ref(false);
@@ -62,20 +62,33 @@ const fetchUsers = async () => {
             page: currentPage.value,
             per_page: perPage.value,
         };
-        
+
         if (searchQuery.value) {
             params.search = searchQuery.value;
         }
-        
+
         if (sortValue.value) {
-            const [field, direction] = sortValue.value.split('_');
+            const [field, direction] = sortValue.value.split("_");
             params.sort = field;
             params.order = direction;
         }
-        
-        const response = await axios.get('/users', { params });
-        users.value = response.data.data || response.data;
-        total.value = response.data.total || users.value.length;
+
+        const response = await axios.get("/users", { params });
+
+        // Handle paginated response if backend sends it
+        if (response.data && response.data.data) {
+            users.value = response.data.data;
+            currentPage.value = response.data.current_page || 1;
+            lastPage.value =
+                response.data.last_page ||
+                Math.ceil((response.data.total || 0) / perPage.value) ||
+                1;
+            total.value = response.data.total || 0;
+        } else {
+            users.value = response.data;
+            total.value = users.value.length;
+            lastPage.value = Math.ceil(total.value / perPage.value) || 1;
+        }
     } catch (error) {
         console.error("Failed to fetch users:", error);
         users.value = [];
@@ -130,14 +143,17 @@ const confirmDelete = async () => {
     try {
         loading.value = true;
         await axios.delete(`/users/${userToDelete.value.id}`);
-        toastSuccess('User Deleted', 'User has been deleted successfully');
+        toastSuccess("User Deleted", "User has been deleted successfully");
         fetchUsers();
-        
+
         showDeleteModal.value = false;
         userToDelete.value = null;
     } catch (error) {
         console.error("Failed to delete user:", error);
-        showError(error.response?.data?.message || "Failed to delete user. Please try again.");
+        showError(
+            error.response?.data?.message ||
+                "Failed to delete user. Please try again.",
+        );
     } finally {
         loading.value = false;
     }
@@ -157,12 +173,12 @@ const openImportModal = () => {
 };
 
 const handleExported = (jobId) => {
-    router.push({ name: 'ExportImportHistory' });
+    router.push({ name: "ExportImportHistory" });
 };
 
 const handleImported = (jobId) => {
     fetchUsers();
-    router.push({ name: 'ExportImportHistory' });
+    router.push({ name: "ExportImportHistory" });
 };
 
 const handleDelete = (row) => {
@@ -227,18 +243,23 @@ const getRoleBadgeVariant = (role) => {
             :data="users"
             :loading="loading"
             empty-message="No users found"
+            :show-pagination="true"
+            :current-page="currentPage"
+            :last-page="lastPage"
+            :total="total"
             @sort="handleSort"
             @row-click="handleRowClick"
+            @page-change="handlePageChange"
         >
             <template #cell-role="{ row }">
                 <BaseBadge :variant="getRoleBadgeVariant(row.role?.name)">
-                    {{ row.role?.name || '-' }}
+                    {{ row.role?.name || "-" }}
                 </BaseBadge>
             </template>
 
             <template #cell-is_active="{ value }">
                 <BaseBadge :variant="value ? 'success' : 'default'">
-                    {{ value ? 'Active' : 'Inactive' }}
+                    {{ value ? "Active" : "Inactive" }}
                 </BaseBadge>
             </template>
 
@@ -264,24 +285,14 @@ const getRoleBadgeVariant = (role) => {
                     </button>
                 </div>
             </template>
-
-            <template #pagination>
-                <BasePagination
-                    :current-page="currentPage"
-                    :total-pages="Math.ceil(total / perPage)"
-                    :per-page="perPage"
-                    :total="total"
-                    @page-change="handlePageChange"
-                />
-            </template>
         </DataTable>
 
         <BaseModal v-model="showDeleteModal" title="Delete User" size="sm">
             <div class="space-y-4">
                 <p class="text-sm text-slate-600">
                     Are you sure you want to delete user
-                    <strong>{{ userToDelete?.name }}</strong>?
-                    This action cannot be undone.
+                    <strong>{{ userToDelete?.name }}</strong
+                    >? This action cannot be undone.
                 </p>
             </div>
 
@@ -295,15 +306,15 @@ const getRoleBadgeVariant = (role) => {
             </template>
         </BaseModal>
 
-        <ExportModal 
-            v-model="showExportModal" 
-            model="user" 
+        <ExportModal
+            v-model="showExportModal"
+            model="user"
             @exported="handleExported"
         />
 
-        <ImportModal 
-            v-model="showImportModal" 
-            model="user" 
+        <ImportModal
+            v-model="showImportModal"
+            model="user"
             @imported="handleImported"
         />
     </div>

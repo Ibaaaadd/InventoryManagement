@@ -84,7 +84,7 @@ const rangeEnd = computed(() => Math.min(props.currentPage * props.perPage, prop
     <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
       <div>
         <p class="text-sm text-slate-600">
-          Showing <span class="font-semibold text-slate-900">{{ rangeStart }}</span> to
+          Showing <span class="font-semibold text-slate-900">{{ total === 0 ? 0 : rangeStart }}</span> to
           <span class="font-semibold text-slate-900">{{ rangeEnd }}</span> of
           <span class="font-semibold text-slate-900">{{ total }}</span> results
         </p>

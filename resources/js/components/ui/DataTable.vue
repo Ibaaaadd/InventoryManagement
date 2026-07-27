@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue';
 import { ChevronUp, ChevronDown, Inbox } from 'lucide-vue-next';
+import BasePagination from './BasePagination.vue';
 
 const props = defineProps({
   columns: {
@@ -19,9 +20,26 @@ const props = defineProps({
     type: String,
     default: 'No data available',
   },
+  // Pagination props
+  showPagination: {
+    type: Boolean,
+    default: false,
+  },
+  currentPage: {
+    type: Number,
+    default: 1,
+  },
+  lastPage: {
+    type: Number,
+    default: 1,
+  },
+  total: {
+    type: Number,
+    default: 0,
+  }
 });
 
-const emit = defineEmits(['sort', 'row-click']);
+const emit = defineEmits(['sort', 'row-click', 'page-change']);
 
 const sortBy = ref('');
 const sortDirection = ref('asc');
@@ -43,6 +61,10 @@ const handleRowClick = (row) => {
   emit('row-click', row);
 };
 
+const handlePageChange = (page) => {
+  emit('page-change', page);
+};
+
 const getColumnAlign = (align) => {
   if (align === 'right') return 'text-right';
   if (align === 'center') return 'text-center';
@@ -51,8 +73,8 @@ const getColumnAlign = (align) => {
 </script>
 
 <template>
-  <div class="overflow-hidden rounded-lg border border-slate-200 bg-white">
-    <div class="overflow-x-auto">
+  <div class="overflow-hidden rounded-lg border border-slate-200 bg-white flex flex-col">
+    <div class="overflow-x-auto flex-1">
       <table class="min-w-full divide-y divide-slate-200">
         <thead class="bg-slate-50">
           <tr>
@@ -146,7 +168,18 @@ const getColumnAlign = (align) => {
       </table>
     </div>
 
-    <div v-if="$slots.pagination" class="border-t border-slate-200 px-6 py-4 bg-slate-50/50">
+    <!-- Built-in pagination -->
+    <div v-if="showPagination" class="border-t border-slate-200 px-0 sm:px-0 py-0 bg-slate-50/50">
+      <BasePagination
+        :current-page="currentPage"
+        :total-pages="lastPage"
+        :total="total"
+        @page-change="handlePageChange"
+      />
+    </div>
+
+    <!-- Fallback slot pagination if needed -->
+    <div v-else-if="$slots.pagination" class="border-t border-slate-200 px-6 py-4 bg-slate-50/50">
       <slot name="pagination" />
     </div>
   </div>

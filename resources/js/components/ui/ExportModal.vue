@@ -15,7 +15,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'close', 'exported']);
 
-const { showToast } = useToast();
+const { showToast, toastSuccess } = useToast();
 
 const availableFields = ref([]);
 const selectedFields = ref([]);
@@ -102,7 +102,7 @@ const handleExport = async () => {
     }
 
     const data = await response.json();
-    showToast('Export sedang diproses', 'success');
+    toastSuccess('Export sedang diproses');
     emit('exported', data.job_id);
     close();
   } catch (error) {

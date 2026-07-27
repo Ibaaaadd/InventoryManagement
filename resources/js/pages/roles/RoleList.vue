@@ -5,13 +5,19 @@ import axios from "@/lib/axios";
 import { showError } from "@/lib/swal";
 import { useDateFormat } from "@/composables/useDateFormat";
 import { useToast } from "@/composables/useToast";
-import { Search, Plus, Pencil, Trash2, Download, Upload } from "lucide-vue-next";
+import {
+    Search,
+    Plus,
+    Pencil,
+    Trash2,
+    Download,
+    Upload,
+} from "lucide-vue-next";
 import BaseButton from "@/components/ui/BaseButton.vue";
 import BaseCard from "@/components/ui/BaseCard.vue";
 import DataTable from "@/components/ui/DataTable.vue";
 import BaseBadge from "@/components/ui/BaseBadge.vue";
 import BaseModal from "@/components/ui/BaseModal.vue";
-import BaseInput from "@/components/ui/BaseInput.vue";
 import ExportModal from "@/components/ui/ExportModal.vue";
 import ImportModal from "@/components/ui/ImportModal.vue";
 
@@ -27,20 +33,42 @@ const roleToDelete = ref(null);
 const showExportModal = ref(false);
 const showImportModal = ref(false);
 
+const currentPage = ref(1);
+const lastPage = ref(1);
+const total = ref(0);
+
 const fetchRoles = async () => {
     try {
         loading.value = true;
-        const params = {};
+        const params = { page: currentPage.value };
         if (searchQuery.value) {
             params.search = searchQuery.value;
         }
         const response = await axios.get("/roles", { params });
-        roles.value = response.data.data || response.data;
+
+        // Handle paginated response if backend sends it
+        if (response.data && response.data.data) {
+            roles.value = response.data.data;
+            currentPage.value = response.data.current_page || 1;
+            lastPage.value = response.data.last_page || 1;
+            total.value = response.data.total || 0;
+        } else {
+            // Fallback if not paginated
+            roles.value = response.data;
+            currentPage.value = 1;
+            lastPage.value = 1;
+            total.value = roles.value.length;
+        }
     } catch (error) {
         console.error("Failed to fetch roles:", error);
     } finally {
         loading.value = false;
     }
+};
+
+const handlePageChange = (page) => {
+    currentPage.value = page;
+    fetchRoles();
 };
 
 const columns = [
@@ -67,16 +95,19 @@ const confirmDelete = async () => {
     try {
         loading.value = true;
         await axios.delete(`/roles/${roleToDelete.value.id}`);
-        
-        roles.value = roles.value.filter((r) => r.id !== roleToDelete.value.id);
-        
-        toastSuccess('Role Deleted', 'Role has been deleted successfully');
-        
+
+        toastSuccess("Role Deleted", "Role has been deleted successfully");
+
         showDeleteModal.value = false;
         roleToDelete.value = null;
+
+        fetchRoles();
     } catch (error) {
         console.error("Failed to delete role:", error);
-        showError(error.response?.data?.message || "Failed to delete role. Please try again.");
+        showError(
+            error.response?.data?.message ||
+                "Failed to delete role. Please try again.",
+        );
     } finally {
         loading.value = false;
     }
@@ -96,15 +127,16 @@ const openImportModal = () => {
 };
 
 const handleExported = (jobId) => {
-    router.push({ name: 'ExportImportHistory' });
+    router.push({ name: "ExportImportHistory" });
 };
 
 const handleImported = (jobId) => {
     fetchRoles();
-    router.push({ name: 'ExportImportHistory' });
+    router.push({ name: "ExportImportHistory" });
 };
 
 watch(searchQuery, () => {
+    currentPage.value = 1;
     fetchRoles();
 });
 
@@ -160,6 +192,11 @@ onMounted(() => {
             :data="filteredRoles"
             :loading="loading"
             empty-message="No roles found"
+            :show-pagination="true"
+            :current-page="currentPage"
+            :last-page="lastPage"
+            :total="total"
+            @page-change="handlePageChange"
         >
             <template #cell-name="{ row }">
                 <div class="font-medium text-slate-900">{{ row.name }}</div>
@@ -233,15 +270,15 @@ onMounted(() => {
             </template>
         </BaseModal>
 
-        <ExportModal 
-            v-model="showExportModal" 
-            model="role" 
+        <ExportModal
+            v-model="showExportModal"
+            model="role"
             @exported="handleExported"
         />
 
-        <ImportModal 
-            v-model="showImportModal" 
-            model="role" 
+        <ImportModal
+            v-model="showImportModal"
+            model="role"
             @imported="handleImported"
         />
     </div>
