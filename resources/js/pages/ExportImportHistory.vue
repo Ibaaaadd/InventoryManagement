@@ -181,7 +181,13 @@ const getTypeLabel = (type) => {
 };
 
 const getModelLabel = (model) => {
-    return model === "role" ? "Role" : "User";
+    const labels = {
+        role: "Role",
+        user: "User",
+        category: "Category",
+        item: "Item"
+    };
+    return labels[model] || model;
 };
 
 const openErrorLog = (job) => {

@@ -10,6 +10,7 @@ import {
   Users,
   ShieldCheck,
   FolderSync,
+  FolderTree,
 } from 'lucide-vue-next';
 
 const route = useRoute();
@@ -26,6 +27,11 @@ const navigation = computed(() => [
         name: 'Dashboard',
         to: '/dashboard',
         icon: LayoutDashboard,
+      },
+      {
+        name: 'Categories',
+        to: '/categories',
+        icon: FolderTree,
       },
       {
         name: 'Items',

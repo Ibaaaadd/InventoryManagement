@@ -9,7 +9,7 @@ const props = defineProps({
   model: {
     type: String,
     required: true,
-    validator: (value) => ['role', 'user'].includes(value),
+    validator: (value) => ['role', 'user', 'category', 'item'].includes(value),
   },
 });
 

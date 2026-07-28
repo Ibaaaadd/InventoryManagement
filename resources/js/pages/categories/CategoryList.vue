@@ -13,14 +13,12 @@ import {
     Download,
     Upload,
     RefreshCw,
-    Filter,
 } from "lucide-vue-next";
 import BaseButton from "@/components/ui/BaseButton.vue";
 import BaseCard from "@/components/ui/BaseCard.vue";
 import DataTable from "@/components/ui/DataTable.vue";
 import BaseBadge from "@/components/ui/BaseBadge.vue";
 import BaseModal from "@/components/ui/BaseModal.vue";
-import BaseSearchableSelect from "@/components/ui/BaseSearchableSelect.vue";
 import ExportModal from "@/components/ui/ExportModal.vue";
 import ImportModal from "@/components/ui/ImportModal.vue";
 
@@ -28,17 +26,14 @@ const router = useRouter();
 const { formatDate } = useDateFormat();
 const { toastSuccess } = useToast();
 
-const items = ref([]);
 const categories = ref([]);
 const loading = ref(false);
-const loadingCategories = ref(false);
 const searchQuery = ref("");
-const categoryFilter = ref("");
 const searchDebounceTimer = ref(null);
 const sortField = ref("");
 const sortDirection = ref("");
 const showDeleteModal = ref(false);
-const itemToDelete = ref(null);
+const categoryToDelete = ref(null);
 const showExportModal = ref(false);
 const showImportModal = ref(false);
 
@@ -47,54 +42,32 @@ const perPage = ref(10);
 const lastPage = ref(1);
 const total = ref(0);
 
-const fetchCategories = async (search = '') => {
-    try {
-        loadingCategories.value = true;
-        const params = {};
-        if (search) params.search = search;
-        const response = await axios.get('/categories', { params });
-        const categoryData = response.data.data || response.data;
-        categories.value = categoryData.map(cat => ({
-            label: cat.name,
-            value: cat.id,
-            code: cat.code
-        }));
-    } catch (error) {
-        console.error('Failed to fetch categories:', error);
-    } finally {
-        loadingCategories.value = false;
-    }
-};
-
-const fetchItems = async () => {
+const fetchCategories = async () => {
     try {
         loading.value = true;
         const params = { page: currentPage.value, per_page: perPage.value };
         if (searchQuery.value) {
             params.search = searchQuery.value;
         }
-        if (categoryFilter.value) {
-            params.category_id = categoryFilter.value;
-        }
         if (sortField.value && sortDirection.value) {
             params.sort = sortField.value;
             params.order = sortDirection.value;
         }
-        const response = await axios.get("/items", { params });
+        const response = await axios.get("/categories", { params });
 
         if (response.data && response.data.data) {
-            items.value = response.data.data;
+            categories.value = response.data.data;
             currentPage.value = response.data.current_page || 1;
             lastPage.value = response.data.last_page || 1;
             total.value = response.data.total || 0;
         } else {
-            items.value = response.data;
+            categories.value = response.data;
             currentPage.value = 1;
             lastPage.value = 1;
-            total.value = items.value.length;
+            total.value = categories.value.length;
         }
     } catch (error) {
-        console.error("Failed to fetch items:", error);
+        console.error("Failed to fetch categories:", error);
     } finally {
         loading.value = false;
     }
@@ -102,47 +75,45 @@ const fetchItems = async () => {
 
 const handlePageChange = (page) => {
     currentPage.value = page;
-    fetchItems();
+    fetchCategories();
 };
 
 const columns = [
-    { key: "sku", label: "SKU", sortable: true },
-    { key: "name", label: "Nama Item", sortable: true },
-    { key: "category", label: "Kategori", sortable: false },
-    { key: "price", label: "Harga", sortable: true },
-    { key: "stock_quantity", label: "Stok", sortable: true },
-    { key: "is_active", label: "Status", sortable: false },
+    { key: "name", label: "Nama Kategori", sortable: true },
+    { key: "code", label: "Kode", sortable: true },
+    { key: "items_count", label: "Jumlah Item", sortable: true },
+    { key: "created_at", label: "Tanggal Dibuat", sortable: true },
 ];
 
-const filteredItems = computed(() => items.value);
+const filteredCategories = computed(() => categories.value);
 
-const handleEdit = (item) => {
-    router.push({ name: "ItemEdit", params: { id: item.id } });
+const handleEdit = (category) => {
+    router.push({ name: "CategoryEdit", params: { id: category.id } });
 };
 
-const openDeleteModal = (item) => {
-    itemToDelete.value = item;
+const openDeleteModal = (category) => {
+    categoryToDelete.value = category;
     showDeleteModal.value = true;
 };
 
 const confirmDelete = async () => {
-    if (!itemToDelete.value) return;
+    if (!categoryToDelete.value) return;
 
     try {
         loading.value = true;
-        await axios.delete(`/items/${itemToDelete.value.id}`);
+        await axios.delete(`/categories/${categoryToDelete.value.id}`);
 
-        toastSuccess("Item Dihapus", "Item berhasil dihapus");
+        toastSuccess("Kategori Dihapus", "Kategori berhasil dihapus");
 
         showDeleteModal.value = false;
-        itemToDelete.value = null;
+        categoryToDelete.value = null;
 
-        fetchItems();
+        fetchCategories();
     } catch (error) {
-        console.error("Failed to delete item:", error);
+        console.error("Failed to delete category:", error);
         showError(
             error.response?.data?.message ||
-                "Gagal menghapus item. Silakan coba lagi.",
+                "Gagal menghapus kategori. Silakan coba lagi.",
         );
     } finally {
         loading.value = false;
@@ -151,7 +122,7 @@ const confirmDelete = async () => {
 
 const cancelDelete = () => {
     showDeleteModal.value = false;
-    itemToDelete.value = null;
+    categoryToDelete.value = null;
 };
 
 const openExportModal = () => {
@@ -167,7 +138,7 @@ const handleExported = (jobId) => {
 };
 
 const handleImported = (jobId) => {
-    fetchItems();
+    fetchCategories();
     router.push({ name: "ExportImportHistory" });
 };
 
@@ -178,43 +149,27 @@ const handleSearchInput = () => {
     
     searchDebounceTimer.value = setTimeout(() => {
         currentPage.value = 1;
-        fetchItems();
+        fetchCategories();
     }, 500);
-};
-
-const handleCategoryFilterChange = () => {
-    currentPage.value = 1;
-    fetchItems();
-};
-
-const clearCategoryFilter = () => {
-    categoryFilter.value = "";
-    currentPage.value = 1;
-    fetchItems();
 };
 
 const handleSort = (sortData) => {
     sortField.value = sortData.key;
     sortDirection.value = sortData.direction;
     currentPage.value = 1;
-    fetchItems();
+    fetchCategories();
 };
 
 const handleRefresh = () => {
-    fetchItems();
+    fetchCategories();
 };
 
-const formatCurrency = (value) => {
-    return new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        minimumFractionDigits: 0,
-    }).format(value);
+const canDeleteCategory = (category) => {
+    return category.items_count === 0;
 };
 
 onMounted(() => {
     fetchCategories();
-    fetchItems();
 });
 </script>
 
@@ -223,10 +178,10 @@ onMounted(() => {
         <div class="flex items-center justify-between">
             <div>
                 <h1 class="text-2xl font-bold text-slate-900 tracking-tight">
-                    Manajemen Item
+                    Manajemen Kategori
                 </h1>
                 <p class="text-sm text-slate-600 mt-1">
-                    Kelola item inventori dan stok
+                    Kelola kategori untuk item inventori
                 </p>
             </div>
             <div class="flex items-center gap-2">
@@ -238,9 +193,9 @@ onMounted(() => {
                     <Upload :size="18" />
                     Import
                 </BaseButton>
-                <BaseButton @click="router.push({ name: 'ItemCreate' })">
+                <BaseButton @click="router.push({ name: 'CategoryCreate' })">
                     <Plus :size="18" />
-                    Tambah Item
+                    Tambah Kategori
                 </BaseButton>
             </div>
         </div>
@@ -256,33 +211,14 @@ onMounted(() => {
                         v-model="searchQuery"
                         @input="handleSearchInput"
                         type="text"
-                        placeholder="Cari item (nama atau SKU)..."
+                        placeholder="Cari kategori..."
                         class="w-full pl-10 pr-4 py-2.5 text-sm border focus:outline-none border-slate-300 rounded-lg focus:ring-1/2 focus:ring-primary-500 focus:border-primary-500 transition-all"
                     />
-                </div>
-                <div class="flex items-center gap-2 min-w-[280px]">
-                    <Filter :size="18" class="text-slate-500 flex-shrink-0" />
-                    <BaseSearchableSelect
-                        v-model="categoryFilter"
-                        placeholder="Filter kategori"
-                        :options="categories"
-                        :loading="loadingCategories"
-                        @update:model-value="handleCategoryFilterChange"
-                        class="flex-1"
-                    />
-                    <BaseButton
-                        v-if="categoryFilter"
-                        @click="clearCategoryFilter"
-                        variant="ghost"
-                        size="sm"
-                    >
-                        Clear
-                    </BaseButton>
                 </div>
                 <button
                     @click="handleRefresh"
                     :disabled="loading"
-                    class="p-2.5 text-slate-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                    class="p-2.5 text-slate-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     title="Refresh"
                 >
                     <RefreshCw :size="20" :class="{ 'animate-spin': loading }" />
@@ -292,9 +228,9 @@ onMounted(() => {
 
         <DataTable
             :columns="columns"
-            :data="filteredItems"
+            :data="filteredCategories"
             :loading="loading"
-            empty-message="Tidak ada item ditemukan"
+            empty-message="Tidak ada kategori ditemukan"
             :show-pagination="true"
             :current-page="currentPage"
             :last-page="lastPage"
@@ -302,39 +238,27 @@ onMounted(() => {
             @sort="handleSort"
             @page-change="handlePageChange"
         >
-            <template #cell-sku="{ row }">
-                <div class="font-mono text-sm font-medium text-slate-900">{{ row.sku }}</div>
-            </template>
-
             <template #cell-name="{ row }">
                 <div class="font-medium text-slate-900">{{ row.name }}</div>
             </template>
 
-            <template #cell-category="{ row }">
-                <BaseBadge v-if="row.category" variant="secondary" size="sm">
-                    {{ row.category.name }}
+            <template #cell-code="{ row }">
+                <BaseBadge variant="secondary" size="sm">
+                    {{ row.code }}
                 </BaseBadge>
             </template>
 
-            <template #cell-price="{ row }">
-                <div class="text-sm text-slate-900 font-medium">
-                    {{ formatCurrency(row.price) }}
+            <template #cell-items_count="{ row }">
+                <BaseBadge variant="info" size="sm">
+                    {{ row.items_count }}
+                    {{ row.items_count === 1 ? "item" : "items" }}
+                </BaseBadge>
+            </template>
+
+            <template #cell-created_at="{ row }">
+                <div class="text-sm text-slate-600">
+                    {{ formatDate(row.created_at) }}
                 </div>
-            </template>
-
-            <template #cell-stock_quantity="{ row }">
-                <BaseBadge 
-                    :variant="row.stock_quantity > 10 ? 'success' : row.stock_quantity > 0 ? 'warning' : 'danger'" 
-                    size="sm"
-                >
-                    {{ row.stock_quantity }}
-                </BaseBadge>
-            </template>
-
-            <template #cell-is_active="{ row }">
-                <BaseBadge :variant="row.is_active ? 'success' : 'danger'" size="sm">
-                    {{ row.is_active ? 'Aktif' : 'Tidak Aktif' }}
-                </BaseBadge>
             </template>
 
             <template #actions="{ row }">
@@ -342,14 +266,20 @@ onMounted(() => {
                     <button
                         @click="handleEdit(row)"
                         class="p-2 text-slate-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
-                        title="Edit Item"
+                        title="Edit Kategori"
                     >
                         <Pencil :size="16" />
                     </button>
                     <button
                         @click="openDeleteModal(row)"
-                        class="p-2 text-slate-600 hover:text-danger-600 hover:bg-danger-50 rounded-lg transition-colors"
-                        title="Hapus Item"
+                        :disabled="!canDeleteCategory(row)"
+                        :class="[
+                            'p-2 rounded-lg transition-colors',
+                            canDeleteCategory(row)
+                                ? 'text-slate-600 hover:text-danger-600 hover:bg-danger-50'
+                                : 'text-slate-300 cursor-not-allowed'
+                        ]"
+                        :title="canDeleteCategory(row) ? 'Hapus Kategori' : 'Tidak bisa dihapus karena masih digunakan'"
                     >
                         <Trash2 :size="16" />
                     </button>
@@ -357,13 +287,22 @@ onMounted(() => {
             </template>
         </DataTable>
 
-        <BaseModal v-model="showDeleteModal" title="Hapus Item" size="sm">
+        <BaseModal v-model="showDeleteModal" title="Hapus Kategori" size="sm">
             <div class="space-y-4">
                 <p class="text-sm text-slate-600">
-                    Apakah Anda yakin ingin menghapus item
-                    <strong>{{ itemToDelete?.name }}</strong> (SKU: <strong>{{ itemToDelete?.sku }}</strong>)?
-                    Aksi ini tidak bisa dibatalkan.
+                    Apakah Anda yakin ingin menghapus kategori
+                    <strong>{{ categoryToDelete?.name }}</strong
+                    >? Aksi ini tidak bisa dibatalkan.
                 </p>
+                <div
+                    v-if="categoryToDelete?.items_count > 0"
+                    class="p-3 bg-danger-50 border border-danger-200 rounded-lg"
+                >
+                    <p class="text-sm text-danger-800">
+                        <strong>Perhatian:</strong> Kategori ini masih digunakan oleh
+                        {{ categoryToDelete.items_count }} item. Anda tidak bisa menghapus kategori ini.
+                    </p>
+                </div>
             </div>
 
             <template #footer>
@@ -379,9 +318,9 @@ onMounted(() => {
                         @click="confirmDelete"
                         variant="danger"
                         :loading="loading"
-                        :disabled="loading"
+                        :disabled="loading || categoryToDelete?.items_count > 0"
                     >
-                        Hapus Item
+                        Hapus Kategori
                     </BaseButton>
                 </div>
             </template>
@@ -389,13 +328,13 @@ onMounted(() => {
 
         <ExportModal
             v-model="showExportModal"
-            model="item"
+            model="category"
             @exported="handleExported"
         />
 
         <ImportModal
             v-model="showImportModal"
-            model="item"
+            model="category"
             @imported="handleImported"
         />
     </div>

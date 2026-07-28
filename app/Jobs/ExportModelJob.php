@@ -6,6 +6,8 @@ use App\Exports\DynamicExport;
 use App\Models\ExportImportJob;
 use App\Models\Role;
 use App\Models\User;
+use App\Models\Category;
+use App\Models\Item;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -71,6 +73,8 @@ class ExportModelJob implements ShouldQueue
         return match($this->model) {
             'role' => $this->fetchRoles(),
             'user' => $this->fetchUsers(),
+            'category' => $this->fetchCategories(),
+            'item' => $this->fetchItems(),
             default => collect([]),
         };
     }
@@ -92,6 +96,28 @@ class ExportModelJob implements ShouldQueue
 
         if (in_array('role', $this->fields)) {
             $query->with('role');
+        }
+
+        return $query->get();
+    }
+
+    protected function fetchCategories()
+    {
+        $query = Category::query();
+
+        if (in_array('items_count', $this->fields)) {
+            $query->withCount('items');
+        }
+
+        return $query->get();
+    }
+
+    protected function fetchItems()
+    {
+        $query = Item::query();
+
+        if (in_array('category', $this->fields)) {
+            $query->with('category');
         }
 
         return $query->get();

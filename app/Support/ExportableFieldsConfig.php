@@ -9,6 +9,8 @@ class ExportableFieldsConfig
         return match($model) {
             'role' => self::getRoleFields(),
             'user' => self::getUserFields(),
+            'category' => self::getCategoryFields(),
+            'item' => self::getItemFields(),
             default => [],
         };
     }
@@ -106,6 +108,106 @@ class ExportableFieldsConfig
                 'exportable' => true,
                 'importable' => false,
                 'aliases' => ['tanggal dibuat', 'created at', 'tanggal buat', 'dibuat'],
+            ],
+        ];
+    }
+
+    private static function getCategoryFields(): array
+    {
+        return [
+            'name' => [
+                'key' => 'name',
+                'label' => 'Nama Kategori',
+                'exportable' => true,
+                'importable' => true,
+                'aliases' => ['nama', 'name', 'nama kategori', 'category name'],
+            ],
+            'code' => [
+                'key' => 'code',
+                'label' => 'Kode Kategori',
+                'exportable' => true,
+                'importable' => true,
+                'aliases' => ['kode', 'code', 'kode kategori', 'category code'],
+            ],
+            'items_count' => [
+                'key' => 'items_count',
+                'label' => 'Jumlah Item',
+                'exportable' => true,
+                'importable' => false,
+                'aliases' => ['jumlah item', 'items count', 'total item'],
+            ],
+            'created_at' => [
+                'key' => 'created_at',
+                'label' => 'Tanggal Dibuat',
+                'exportable' => true,
+                'importable' => false,
+            ],
+        ];
+    }
+
+    private static function getItemFields(): array
+    {
+        return [
+            'sku' => [
+                'key' => 'sku',
+                'label' => 'SKU',
+                'exportable' => true,
+                'importable' => false,
+            ],
+            'name' => [
+                'key' => 'name',
+                'label' => 'Nama Item',
+                'exportable' => true,
+                'importable' => true,
+                'aliases' => ['nama', 'name', 'nama item', 'nama barang'],
+            ],
+            'category' => [
+                'key' => 'category',
+                'label' => 'Kategori',
+                'exportable' => true,
+                'importable' => true,
+                'aliases' => ['kategori', 'category'],
+            ],
+            'description' => [
+                'key' => 'description',
+                'label' => 'Deskripsi',
+                'exportable' => true,
+                'importable' => true,
+                'aliases' => ['deskripsi', 'description', 'keterangan'],
+            ],
+            'price' => [
+                'key' => 'price',
+                'label' => 'Harga',
+                'exportable' => true,
+                'importable' => true,
+                'aliases' => ['harga', 'price'],
+            ],
+            'stock_quantity' => [
+                'key' => 'stock_quantity',
+                'label' => 'Stok',
+                'exportable' => true,
+                'importable' => true,
+                'aliases' => ['stok', 'stock', 'jumlah stok', 'quantity'],
+            ],
+            'metadata' => [
+                'key' => 'metadata',
+                'label' => 'Metadata',
+                'exportable' => true,
+                'importable' => true,
+                'aliases' => ['metadata', 'atribut', 'spesifikasi'],
+            ],
+            'is_active' => [
+                'key' => 'is_active',
+                'label' => 'Status Aktif',
+                'exportable' => true,
+                'importable' => true,
+                'aliases' => ['status', 'aktif', 'is_active', 'active'],
+            ],
+            'created_at' => [
+                'key' => 'created_at',
+                'label' => 'Tanggal Dibuat',
+                'exportable' => true,
+                'importable' => false,
             ],
         ];
     }

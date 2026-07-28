@@ -14,7 +14,7 @@ class ImportController extends Controller
 {
     public function preview(Request $request, string $model)
     {
-        if (!in_array($model, ['role', 'user'])) {
+        if (!in_array($model, ['role', 'user', 'category', 'item'])) {
             return response()->json(['message' => 'Invalid model'], 400);
         }
 
@@ -67,7 +67,7 @@ class ImportController extends Controller
 
     public function confirm(Request $request, string $model)
     {
-        if (!in_array($model, ['role', 'user'])) {
+        if (!in_array($model, ['role', 'user', 'category', 'item'])) {
             return response()->json(['message' => 'Invalid model'], 400);
         }
 
@@ -110,7 +110,7 @@ class ImportController extends Controller
 
     public function getImportableFields(string $model)
     {
-        if (!in_array($model, ['role', 'user'])) {
+        if (!in_array($model, ['role', 'user', 'category', 'item'])) {
             return response()->json(['message' => 'Invalid model'], 400);
         }
 

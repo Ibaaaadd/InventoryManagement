@@ -169,7 +169,7 @@ onUnmounted(() => {
                 type="text"
                 placeholder="Search..."
                 @keydown="handleKeydown"
-                class="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+                class="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-1/2 focus:ring-primary-500 focus:border-primary-500 outline-none"
               />
             </div>
           </div>

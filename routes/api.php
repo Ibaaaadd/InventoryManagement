@@ -5,6 +5,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\ItemController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\ImportController;
@@ -16,6 +18,8 @@ Route::get('/user', [AuthController::class, 'user'])->middleware('auth:sanctum')
 Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('roles', RoleController::class);
     Route::apiResource('users', UserController::class)->middleware('administrator');
+    Route::apiResource('categories', CategoryController::class);
+    Route::apiResource('items', ItemController::class);
     Route::get('audits', [AuditController::class, 'index']);
     
     Route::post('export/{model}', [ExportController::class, 'exportModel']);

@@ -52,7 +52,11 @@ class DynamicExport implements FromCollection, WithHeadings, WithMapping, WithSt
         foreach ($this->fields as $field) {
             if ($field === 'role' && $this->model === 'user') {
                 $mapped[] = $row->role?->name ?? '';
-            } elseif ($field === 'is_active' && $this->model === 'user') {
+            } elseif ($field === 'category' && $this->model === 'item') {
+                $mapped[] = $row->category?->name ?? '';
+            } elseif ($field === 'metadata' && $this->model === 'item') {
+                $mapped[] = $row->metadata ? json_encode($row->metadata, JSON_UNESCAPED_UNICODE) : '';
+            } elseif ($field === 'is_active' && in_array($this->model, ['user', 'item'])) {
                 $mapped[] = $row->is_active ? 'Aktif' : 'Tidak Aktif';
             } elseif ($field === 'created_at') {
                 $mapped[] = $row->created_at?->format('Y-m-d H:i:s') ?? '';

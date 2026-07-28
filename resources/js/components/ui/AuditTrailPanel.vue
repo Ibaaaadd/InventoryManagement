@@ -125,6 +125,9 @@ const getFieldLabel = (field) => {
     price: 'Harga',
     sku: 'SKU',
     category: 'Kategori',
+    metadata: 'Metadata',
+    category_id: 'Kategori',
+    stock_quantity: 'Stok',
   };
   return labels[field] || field;
 };
@@ -146,20 +149,59 @@ const parseChanges = (oldValues, newValues) => {
   const excludeFields = ['id', 'created_at', 'updated_at', 'deleted_at'];
   const allKeys = new Set([...Object.keys(old), ...Object.keys(newVals)]);
   
+  const isObject = (val) => {
+    return val !== null && typeof val === 'object' && !Array.isArray(val);
+  };
+  
+  const formatValue = (val) => {
+    if (val === null || val === undefined) return '-';
+    if (typeof val === 'boolean') return val ? 'Ya' : 'Tidak';
+    if (typeof val === 'object') return JSON.stringify(val);
+    return String(val);
+  };
+  
   allKeys.forEach(key => {
     if (excludeFields.includes(key)) return;
     
     const oldVal = old[key];
     const newVal = newVals[key];
     
-    if (oldVal !== newVal) {
+    if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
       const isPasswordField = key === 'password' || key === 'password_confirmation';
-      changes.push({
-        field: key,
-        label: getFieldLabel(key),
-        oldValue: isPasswordField && oldVal ? '*****' : (oldVal ?? '-'),
-        newValue: isPasswordField && newVal ? '*****' : (newVal ?? '-'),
-      });
+      
+      if (isPasswordField) {
+        changes.push({
+          field: key,
+          label: getFieldLabel(key),
+          oldValue: oldVal ? '*****' : '-',
+          newValue: newVal ? '*****' : '-',
+        });
+      } else if (isObject(oldVal) || isObject(newVal)) {
+        const oldObj = oldVal || {};
+        const newObj = newVal || {};
+        const metaKeys = new Set([...Object.keys(oldObj), ...Object.keys(newObj)]);
+        
+        metaKeys.forEach(metaKey => {
+          const oldMetaVal = oldObj[metaKey];
+          const newMetaVal = newObj[metaKey];
+          
+          if (JSON.stringify(oldMetaVal) !== JSON.stringify(newMetaVal)) {
+            changes.push({
+              field: `${key}.${metaKey}`,
+              label: `${getFieldLabel(key)} - ${metaKey}`,
+              oldValue: formatValue(oldMetaVal),
+              newValue: formatValue(newMetaVal),
+            });
+          }
+        });
+      } else {
+        changes.push({
+          field: key,
+          label: getFieldLabel(key),
+          oldValue: formatValue(oldVal),
+          newValue: formatValue(newVal),
+        });
+      }
     }
   });
   

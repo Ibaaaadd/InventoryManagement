@@ -12,7 +12,7 @@ class ExportController extends Controller
 {
     public function exportModel(Request $request, string $model)
     {
-        if (!in_array($model, ['role', 'user'])) {
+        if (!in_array($model, ['role', 'user', 'category', 'item'])) {
             return response()->json(['message' => 'Invalid model'], 400);
         }
 
@@ -48,7 +48,7 @@ class ExportController extends Controller
 
     public function getExportableFields(string $model)
     {
-        if (!in_array($model, ['role', 'user'])) {
+        if (!in_array($model, ['role', 'user', 'category', 'item'])) {
             return response()->json(['message' => 'Invalid model'], 400);
         }
 

@@ -33,6 +33,21 @@ const routes = [
         component: () => import('@/pages/dashboard/Dashboard.vue'),
       },
       {
+        path: 'categories',
+        name: 'CategoryList',
+        component: () => import('@/pages/categories/CategoryList.vue'),
+      },
+      {
+        path: 'categories/create',
+        name: 'CategoryCreate',
+        component: () => import('@/pages/categories/CategoryForm.vue'),
+      },
+      {
+        path: 'categories/:id/edit',
+        name: 'CategoryEdit',
+        component: () => import('@/pages/categories/CategoryForm.vue'),
+      },
+      {
         path: 'items',
         name: 'ItemList',
         component: () => import('@/pages/items/ItemList.vue'),

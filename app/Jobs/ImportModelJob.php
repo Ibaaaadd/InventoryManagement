@@ -2,9 +2,12 @@
 
 namespace App\Jobs;
 
+use App\Models\Category;
 use App\Models\ExportImportJob;
+use App\Models\Item;
 use App\Models\Role;
 use App\Models\User;
+use App\Support\ItemCodeGenerator;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -22,8 +25,11 @@ class ImportModelJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     protected ExportImportJob $jobRecord;
+
     protected array $errors = [];
+
     protected int $processedRows = 0;
+
     protected int $failedRows = 0;
 
     public function __construct(
@@ -56,24 +62,25 @@ class ImportModelJob implements ShouldQueue
 
             foreach ($rows as $index => $row) {
                 $rowNumber = $index + 2;
-                
+
                 try {
                     $data = $this->mapRowData($headers, $row);
-                    
+
                     if (empty(array_filter($data))) {
                         continue;
                     }
 
                     $data = $this->processData($data);
-                    
+
                     $validation = $this->validateRow($data);
-                    
+
                     if ($validation->fails()) {
                         $this->errors[] = [
                             'row' => $rowNumber,
                             'errors' => $validation->errors()->toArray(),
                         ];
                         $this->failedRows++;
+
                         continue;
                     }
 
@@ -133,11 +140,11 @@ class ImportModelJob implements ShouldQueue
             if (isset($data['role'])) {
                 $roleName = $data['role'];
                 $role = Role::where('name', $roleName)->first();
-                
-                if (!$role) {
+
+                if (! $role) {
                     throw new \Exception("Role tidak ditemukan: {$roleName}");
                 }
-                
+
                 $data['role_id'] = $role->id;
                 unset($data['role']);
             }
@@ -156,12 +163,59 @@ class ImportModelJob implements ShouldQueue
             }
         }
 
+        if ($this->model === 'category') {
+            if (isset($data['code'])) {
+                $data['code'] = strtoupper($data['code']);
+            }
+        }
+
+        if ($this->model === 'item') {
+            if (isset($data['category'])) {
+                $categoryName = $data['category'];
+                $category = Category::where('name', $categoryName)->first();
+
+                if (! $category) {
+                    throw new \Exception("Kategori tidak ditemukan: {$categoryName}");
+                }
+
+                $data['category_id'] = $category->id;
+                unset($data['category']);
+            }
+
+            unset($data['sku']);
+
+            if (! isset($data['category_id']) || empty($data['category_id'])) {
+                throw new \Exception('Category ID diperlukan untuk generate SKU');
+            }
+
+            $data['sku'] = ItemCodeGenerator::generate($data['category_id']);
+
+            if (isset($data['metadata']) && is_string($data['metadata'])) {
+                $decoded = json_decode($data['metadata'], true);
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    Log::warning('Metadata tidak valid, diabaikan untuk row ini', [
+                        'metadata' => $data['metadata'],
+                    ]);
+                    $data['metadata'] = null;
+                } else {
+                    $data['metadata'] = $decoded;
+                }
+            }
+
+            if (isset($data['is_active'])) {
+                $value = strtolower(trim($data['is_active']));
+                $data['is_active'] = in_array($value, ['1', 'true', 'yes', 'ya', 'aktif']);
+            } else {
+                $data['is_active'] = true;
+            }
+        }
+
         return $data;
     }
 
     protected function validateRow(array $data): \Illuminate\Validation\Validator
     {
-        $rules = match($this->model) {
+        $rules = match ($this->model) {
             'role' => [
                 'name' => 'required|string|min:3|unique:roles,name',
                 'description' => 'nullable|string',
@@ -173,6 +227,19 @@ class ImportModelJob implements ShouldQueue
                 'role_id' => 'required|exists:roles,id',
                 'is_active' => 'sometimes|boolean',
             ],
+            'category' => [
+                'name' => 'required|string|unique:categories,name',
+                'code' => 'required|string|unique:categories,code',
+            ],
+            'item' => [
+                'name' => 'required|string',
+                'category_id' => 'required|exists:categories,id',
+                'price' => 'required|numeric|min:0',
+                'stock_quantity' => 'required|integer|min:0',
+                'description' => 'nullable|string',
+                'metadata' => 'nullable|array',
+                'is_active' => 'sometimes|boolean',
+            ],
             default => [],
         };
 
@@ -181,9 +248,11 @@ class ImportModelJob implements ShouldQueue
 
     protected function insertRow(array $data): void
     {
-        match($this->model) {
+        match ($this->model) {
             'role' => Role::create($data),
             'user' => User::create($data),
+            'category' => Category::create($data),
+            'item' => Item::create($data),
             default => null,
         };
     }
