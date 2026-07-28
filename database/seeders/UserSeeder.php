@@ -17,21 +17,21 @@ class UserSeeder extends Seeder
 
         User::create([
             'name' => 'Admin User',
-            'email' => 'admin@ims.test',
+            'email' => 'admin@gmail.com',
             'password' => Hash::make('password'),
             'role_id' => $adminRole->id,
         ]);
 
         User::create([
             'name' => 'Manager User',
-            'email' => 'manager@ims.test',
+            'email' => 'manager@gmail.com',
             'password' => Hash::make('password'),
             'role_id' => $managerRole->id,
         ]);
 
         User::create([
             'name' => 'Staff User',
-            'email' => 'staff@ims.test',
+            'email' => 'staff@gmail.com',
             'password' => Hash::make('password'),
             'role_id' => $staffRole->id,
         ]);

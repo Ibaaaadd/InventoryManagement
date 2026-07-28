@@ -57,7 +57,7 @@ onMounted(async () => {
 
 const fetchItems = async () => {
   try {
-    const response = await axios.get('/items');
+    const response = await axios.get('/items?all=true');
     const items = response.data.data || response.data;
     itemOptions.value = items.map(item => ({
       value: item.id,
@@ -82,6 +82,20 @@ const fetchMutation = async () => {
       attachment: null,
       transaction_date: mutation.transaction_date?.split('T')[0] || new Date().toISOString().split('T')[0],
     };
+
+    if (!itemOptions.value.find(opt => opt.value === mutation.item_id)) {
+      if (mutation.item) {
+        itemOptions.value.unshift({
+          value: mutation.item.id,
+          label: `${mutation.item.sku} - ${mutation.item.name}`,
+        });
+      } else if (mutation.item_sku_snapshot && mutation.item_name_snapshot) {
+        itemOptions.value.unshift({
+          value: mutation.item_id,
+          label: `${mutation.item_sku_snapshot} - ${mutation.item_name_snapshot} (Deleted)`,
+        });
+      }
+    }
   } catch (error) {
     console.error('Failed to fetch mutation:', error);
     toastError('Failed to load mutation data');

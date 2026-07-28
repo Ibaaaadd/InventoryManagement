@@ -34,6 +34,11 @@ class ItemController extends Controller
             }
         }
 
+        if ($request->has('all') && $request->boolean('all')) {
+            $items = $query->get();
+            return response()->json(['data' => $items]);
+        }
+
         $items = $query->paginate(10);
 
         return response()->json($items);

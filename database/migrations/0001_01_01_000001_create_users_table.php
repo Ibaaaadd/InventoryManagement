@@ -20,6 +20,7 @@ return new class extends Migration
             $table->uuid('role_id');
             $table->boolean('is_active')->default(true);
             $table->rememberToken();
+            $table->uuid('approver_id')->nullable()->after('role_id');
             $table->timestamps();
             $table->softDeletes();
 

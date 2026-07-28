@@ -1,12 +1,13 @@
 <script setup>
 import { ref, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
-import { Plus, Eye, CheckCircle, XCircle, Download, Upload, RefreshCw, Search, Filter } from "lucide-vue-next";
+import { Plus, Eye, CheckCircle, XCircle, Download, Upload, RefreshCw, Search, Filter, Pencil, Trash2 } from "lucide-vue-next";
 import { useStatusBadge } from "@/composables/useStatusBadge";
 import { useDateFormat } from "@/composables/useDateFormat";
 import { useAuth } from "@/composables/useAuth";
 import { useToast } from "@/composables/useToast";
 import axios from "@/lib/axios";
+import BaseSearchableSelect from "@/components/ui/BaseSearchableSelect.vue";
 import BaseCard from "@/components/ui/BaseCard.vue";
 import DataTable from "@/components/ui/DataTable.vue";
 import BaseButton from "@/components/ui/BaseButton.vue";
@@ -35,6 +36,7 @@ const total = ref(0);
 
 const showApproveModal = ref(false);
 const showRejectModal = ref(false);
+const showDeleteModal = ref(false);
 const showExportModal = ref(false);
 const showImportModal = ref(false);
 const selectedMutation = ref(null);
@@ -111,13 +113,20 @@ const handleClear = () => {
     fetchMutations();
 };
 
-const clearTypeFilter = () => {
-    typeFilter.value = "";
+const handleTypeFilterChange = () => {
+    currentPage.value = 1;
     fetchMutations();
 };
 
-const clearStatusFilter = () => {
+const handleStatusFilterChange = () => {
+    currentPage.value = 1;
+    fetchMutations();
+};
+
+const clearFilters = () => {
+    typeFilter.value = "";
     statusFilter.value = "";
+    currentPage.value = 1;
     fetchMutations();
 };
 
@@ -146,16 +155,14 @@ const openImportModal = () => {
     showImportModal.value = true;
 };
 
-const handleExportComplete = () => {
-    showExportModal.value = false;
-    toastSuccess("Export job created successfully");
-    router.push('/export-import-history');
+const handleExported = (jobId) => {
+    fetchMutations();
+    router.push({ name: "ExportImportHistory" });
 };
 
-const handleImportComplete = () => {
-    showImportModal.value = false;
-    toastSuccess("Import job created successfully");
-    router.push('/export-import-history');
+const handleImported = (jobId) => {
+    fetchMutations();
+    router.push({ name: "ExportImportHistory" });
 };
 
 const handleRefresh = () => {
@@ -178,6 +185,10 @@ const canEdit = (mutation) => {
     return mutation.status === 'pending' && mutation.user_id === user.value?.id;
 };
 
+const canDelete = (mutation) => {
+    return mutation.status === 'pending' && mutation.user_id === user.value?.id;
+};
+
 const openApproveModal = (mutation) => {
     selectedMutation.value = mutation;
     approvalNotes.value = "";
@@ -188,6 +199,11 @@ const openRejectModal = (mutation) => {
     selectedMutation.value = mutation;
     rejectNotes.value = "";
     showRejectModal.value = true;
+};
+
+const openDeleteModal = (mutation) => {
+    selectedMutation.value = mutation;
+    showDeleteModal.value = true;
 };
 
 const handleApprove = async () => {
@@ -223,6 +239,22 @@ const handleReject = async () => {
         toastError(error.response?.data?.message || "Failed to reject mutation");
     } finally {
         processingApproval.value = false;
+    }
+};
+
+const handleDelete = async () => {
+    if (!selectedMutation.value) return;
+    loading.value = true;
+    try {
+        await axios.delete(`/stock-mutations/${selectedMutation.value.id}`);
+        toastSuccess("Stock mutation deleted successfully");
+        showDeleteModal.value = false;
+        await fetchMutations();
+    } catch (error) {
+        console.error("Failed to delete mutation:", error);
+        toastError(error.response?.data?.message || "Failed to delete mutation");
+    } finally {
+        loading.value = false;
     }
 };
 </script>
@@ -269,42 +301,31 @@ const handleReject = async () => {
                         class="w-full pl-10 pr-4 py-2.5 text-sm border focus:outline-none border-slate-300 rounded-lg focus:ring-1/2 focus:ring-primary-500 focus:border-primary-500 transition-all"
                     />
                 </div>
-                <div class="flex items-center gap-2 min-w-[200px]">
+                <div class="flex items-center gap-2 min-w-[280px]">
                     <Filter :size="18" class="text-slate-500 flex-shrink-0" />
-                    <BaseSelect
+                    <BaseSearchableSelect
                         v-model="typeFilter"
                         placeholder="Filter type"
                         :options="typeOptions"
-                        @update:model-value="fetchMutations"
+                        @update:model-value="handleTypeFilterChange"
                         class="flex-1"
                     />
-                    <BaseButton
-                        v-if="typeFilter"
-                        @click="clearTypeFilter"
-                        variant="ghost"
-                        size="sm"
-                    >
-                        Clear
-                    </BaseButton>
-                </div>
-                <div class="flex items-center gap-2 min-w-[200px]">
-                    <Filter :size="18" class="text-slate-500 flex-shrink-0" />
-                    <BaseSelect
+                    <BaseSearchableSelect
                         v-model="statusFilter"
                         placeholder="Filter status"
                         :options="statusOptions"
-                        @update:model-value="fetchMutations"
+                        @update:model-value="handleStatusFilterChange"
                         class="flex-1"
                     />
-                    <BaseButton
-                        v-if="statusFilter"
-                        @click="clearStatusFilter"
+                </div>
+                <BaseButton
+                        v-if="typeFilter || statusFilter"
+                        @click="clearFilters"
                         variant="ghost"
                         size="sm"
                     >
                         Clear
                     </BaseButton>
-                </div>
                 <button
                     @click="handleRefresh"
                     :disabled="loading"
@@ -367,6 +388,22 @@ const handleReject = async () => {
                         title="View Details"
                     >
                         <Eye :size="16" />
+                    </button>
+                    <button
+                        v-if="canEdit(row)"
+                        @click.stop="router.push(`/stock-mutations/${row.id}/edit`)"
+                        class="p-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        title="Edit"
+                    >
+                        <Pencil :size="16" />
+                    </button>
+                    <button
+                        v-if="canDelete(row)"
+                        @click.stop="openDeleteModal(row)"
+                        class="p-2 text-slate-600 hover:text-danger-600 hover:bg-danger-50 rounded-lg transition-colors"
+                        title="Delete"
+                    >
+                        <Trash2 :size="16" />
                     </button>
                     <button
                         v-if="canApprove(row)"
@@ -466,16 +503,49 @@ const handleReject = async () => {
             </template>
         </BaseModal>
 
+        <BaseModal v-model="showDeleteModal" title="Delete Stock Mutation">
+            <div class="space-y-4">
+                <p class="text-sm text-slate-600">
+                    Are you sure you want to delete this stock mutation? This action cannot be undone.
+                </p>
+                <div v-if="selectedMutation" class="bg-slate-50 p-3 rounded-lg text-sm">
+                    <p><strong>Item:</strong> {{ selectedMutation.item_name_snapshot }}</p>
+                    <p><strong>Type:</strong> {{ selectedMutation.type === 'in' ? 'Stock In' : 'Stock Out' }}</p>
+                    <p><strong>Quantity:</strong> {{ selectedMutation.quantity }}</p>
+                </div>
+            </div>
+            <template #footer>
+                <div class="flex justify-end gap-3">
+                    <BaseButton
+                        variant="ghost"
+                        @click="showDeleteModal = false"
+                        :disabled="loading"
+                    >
+                        Cancel
+                    </BaseButton>
+                    <BaseButton
+                        variant="danger"
+                        @click="handleDelete"
+                        :loading="loading"
+                        :disabled="loading"
+                    >
+                        <Trash2 :size="18" />
+                        Delete
+                    </BaseButton>
+                </div>
+            </template>
+        </BaseModal>
+
         <ExportModal
             v-model="showExportModal"
             model="stock-mutation"
-            @complete="handleExportComplete"
+            @exported="handleExported"
         />
 
         <ImportModal
             v-model="showImportModal"
             model="stock-mutation"
-            @complete="handleImportComplete"
+            @imported="handleImported"
         />
     </div>
 </template>
