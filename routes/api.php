@@ -10,6 +10,7 @@ use App\Http\Controllers\ItemController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\ImportController;
+use App\Http\Controllers\StockMutationController;
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
@@ -20,6 +21,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('users', UserController::class)->middleware('administrator');
     Route::apiResource('categories', CategoryController::class);
     Route::apiResource('items', ItemController::class);
+    Route::apiResource('stock-mutations', StockMutationController::class);
+    Route::post('stock-mutations/{stockMutation}/approve', [StockMutationController::class, 'approve']);
+    Route::post('stock-mutations/{stockMutation}/reject', [StockMutationController::class, 'reject']);
+    Route::get('stock-mutations/{stockMutation}/attachment/download', [StockMutationController::class, 'downloadAttachment']);
+    Route::get('stock-mutations/{stockMutation}/attachment/view', [StockMutationController::class, 'viewAttachment']);
     Route::get('audits', [AuditController::class, 'index']);
     
     Route::post('export/{model}', [ExportController::class, 'exportModel']);

@@ -2,6 +2,9 @@
 import { ref, onMounted, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { Save, X, ArrowLeft, Info } from 'lucide-vue-next';
+import { useAuth } from '@/composables/useAuth';
+import { useToast } from '@/composables/useToast';
+import axios from '@/lib/axios';
 import BaseCard from '@/components/ui/BaseCard.vue';
 import BaseInput from '@/components/ui/BaseInput.vue';
 import BaseSearchableSelect from '@/components/ui/BaseSearchableSelect.vue';
@@ -11,6 +14,8 @@ import FileUploadPdf from '@/components/ui/FileUploadPdf.vue';
 
 const router = useRouter();
 const route = useRoute();
+const { user } = useAuth();
+const { toastSuccess, toastError } = useToast();
 
 const isEdit = computed(() => !!route.params.id);
 const pageTitle = computed(() => isEdit.value ? 'Edit Stock Mutation' : 'Create New Stock Mutation');
@@ -20,46 +25,67 @@ const form = ref({
   type: '',
   quantity: 0,
   notes: '',
-  document: null,
-  mutation_date: new Date().toISOString().split('T')[0],
+  attachment: null,
+  transaction_date: new Date().toISOString().split('T')[0],
 });
 
 const errors = ref({});
 const loading = ref(false);
 const submitting = ref(false);
+const hasApprover = ref(true);
 
-const itemOptions = ref([
-  { value: 1, label: 'ITM001 - Laptop Dell XPS 15' },
-  { value: 2, label: 'ITM002 - Mouse Wireless Logitech' },
-  { value: 3, label: 'ITM003 - Keyboard Mechanical' },
-  { value: 4, label: 'ITM004 - Monitor 27 inch' },
-  { value: 5, label: 'ITM005 - USB Cable Type-C' },
-]);
+const itemOptions = ref([]);
 
 const typeOptions = [
-  { value: 'IN', label: 'Stock In (Incoming)' },
-  { value: 'OUT', label: 'Stock Out (Outgoing)' },
+  { value: 'in', label: 'Stock In (Incoming)' },
+  { value: 'out', label: 'Stock Out (Outgoing)' },
 ];
 
 onMounted(async () => {
+  if (!user.value?.approver_id) {
+    hasApprover.value = false;
+    toastError('Anda belum memiliki approver yang ditunjuk. Hubungi administrator untuk mengatur approver Anda terlebih dahulu.');
+    router.push('/stock-mutations');
+    return;
+  }
+  
+  await fetchItems();
   if (isEdit.value) {
     await fetchMutation();
   }
 });
 
+const fetchItems = async () => {
+  try {
+    const response = await axios.get('/items');
+    const items = response.data.data || response.data;
+    itemOptions.value = items.map(item => ({
+      value: item.id,
+      label: `${item.sku} - ${item.name}`,
+    }));
+  } catch (error) {
+    console.error('Failed to fetch items:', error);
+  }
+};
+
 const fetchMutation = async () => {
   loading.value = true;
   try {
+    const response = await axios.get(`/stock-mutations/${route.params.id}`);
+    const mutation = response.data;
+    
     form.value = {
-      item_id: 1,
-      type: 'IN',
-      quantity: 10,
-      notes: 'New stock arrival from supplier',
-      document: null,
-      mutation_date: '2026-07-25',
+      item_id: mutation.item_id,
+      type: mutation.type,
+      quantity: mutation.quantity,
+      notes: mutation.notes || '',
+      attachment: null,
+      transaction_date: mutation.transaction_date?.split('T')[0] || new Date().toISOString().split('T')[0],
     };
   } catch (error) {
     console.error('Failed to fetch mutation:', error);
+    toastError('Failed to load mutation data');
+    router.push('/stock-mutations');
   } finally {
     loading.value = false;
   }
@@ -80,12 +106,12 @@ const validateForm = () => {
     errors.value.quantity = 'Quantity must be greater than 0';
   }
 
-  if (!form.value.mutation_date) {
-    errors.value.mutation_date = 'Mutation date is required';
+  if (!form.value.transaction_date) {
+    errors.value.transaction_date = 'Transaction date is required';
   }
 
-  if (!isEdit.value && !form.value.document) {
-    errors.value.document = 'Supporting document is required for new mutations';
+  if (!isEdit.value && !form.value.attachment) {
+    errors.value.attachment = 'Supporting document is required for new mutations';
   }
 
   return Object.keys(errors.value).length === 0;
@@ -100,18 +126,37 @@ const handleSubmit = async () => {
     formData.append('item_id', form.value.item_id);
     formData.append('type', form.value.type);
     formData.append('quantity', form.value.quantity);
-    formData.append('notes', form.value.notes);
-    formData.append('mutation_date', form.value.mutation_date);
-    if (form.value.document) {
-      formData.append('document', form.value.document);
+    formData.append('transaction_date', form.value.transaction_date);
+    if (form.value.notes) {
+      formData.append('notes', form.value.notes);
+    }
+    if (form.value.attachment) {
+      formData.append('attachment', form.value.attachment);
     }
 
-    console.log('Submitting mutation:', form.value);
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    if (isEdit.value) {
+      formData.append('_method', 'PUT');
+      await axios.post(`/stock-mutations/${route.params.id}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      toastSuccess('Stock mutation updated successfully');
+    } else {
+      await axios.post('/stock-mutations', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      toastSuccess('Stock mutation created successfully');
+    }
+    
     router.push('/stock-mutations');
   } catch (error) {
     console.error('Failed to save mutation:', error);
-    errors.value.submit = 'Failed to save mutation. Please try again.';
+    if (error.response?.data?.errors) {
+      errors.value = error.response.data.errors;
+    } else if (error.response?.data?.message) {
+      errors.value.submit = error.response.data.message;
+    } else {
+      errors.value.submit = 'Failed to save mutation. Please try again.';
+    }
   } finally {
     submitting.value = false;
   }
@@ -122,7 +167,7 @@ const handleCancel = () => {
 };
 
 const handleDocumentError = (error) => {
-  errors.value.document = error;
+  errors.value.attachment = error;
 };
 </script>
 
@@ -192,10 +237,10 @@ const handleDocumentError = (error) => {
           />
 
           <BaseInput
-            v-model="form.mutation_date"
+            v-model="form.transaction_date"
             type="date"
-            label="Mutation Date"
-            :error="errors.mutation_date"
+            label="Transaction Date"
+            :error="errors.transaction_date"
             :disabled="loading"
             required
           />
@@ -213,9 +258,9 @@ const handleDocumentError = (error) => {
         <div class="border-t border-slate-200 pt-6">
           <h3 class="text-lg font-medium text-slate-900 mb-4">Supporting Document</h3>
           <FileUploadPdf
-            v-model="form.document"
+            v-model="form.attachment"
             label="Upload PDF Document"
-            :error="errors.document"
+            :error="errors.attachment"
             :disabled="loading"
             :required="!isEdit"
             :min-size="100"

@@ -73,6 +73,11 @@ const routes = [
         component: () => import('@/pages/stock-mutations/StockMutationForm.vue'),
       },
       {
+        path: 'stock-mutations/:id/edit',
+        name: 'StockMutationEdit',
+        component: () => import('@/pages/stock-mutations/StockMutationForm.vue'),
+      },
+      {
         path: 'stock-mutations/:id',
         name: 'StockMutationDetail',
         component: () => import('@/pages/stock-mutations/StockMutationDetail.vue'),

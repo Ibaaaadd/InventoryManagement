@@ -54,6 +54,7 @@ class UserController extends Controller
             'email' => ['required', 'email', Rule::unique('users', 'email')->whereNull('deleted_at')],
             'password' => 'required|string|min:8|confirmed',
             'role_id' => 'required|exists:roles,id',
+            'approver_id' => 'nullable|exists:users,id',
             'is_active' => 'sometimes|boolean',
         ]);
 
@@ -78,8 +79,15 @@ class UserController extends Controller
             'email' => ['required', 'email', Rule::unique('users', 'email')->ignore($user->id)->whereNull('deleted_at')],
             'password' => 'nullable|string|min:8|confirmed',
             'role_id' => 'required|exists:roles,id',
+            'approver_id' => 'nullable|exists:users,id',
             'is_active' => 'sometimes|boolean',
         ]);
+
+        if (isset($validated['approver_id']) && $validated['approver_id'] === $user->id) {
+            return response()->json([
+                'message' => 'User tidak bisa menjadi approver untuk dirinya sendiri.'
+            ], 422);
+        }
 
         if (!empty($validated['password'])) {
             $validated['password'] = Hash::make($validated['password']);

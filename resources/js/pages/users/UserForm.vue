@@ -27,6 +27,7 @@ const form = ref({
   password: '',
   password_confirmation: '',
   role: '',
+  approver_id: '',
   is_active: true,
 });
 
@@ -36,6 +37,8 @@ const submitting = ref(false);
 const userName = ref('');
 
 const roleOptions = ref([]);
+const approverOptions = ref([]);
+const currentUserId = ref(null);
 
 const fetchRoles = async () => {
   try {
@@ -50,11 +53,27 @@ const fetchRoles = async () => {
   }
 };
 
+const fetchUsers = async () => {
+  try {
+    const response = await axios.get('/users');
+    const users = response.data.data || response.data;
+    approverOptions.value = users
+      .filter(user => !currentUserId.value || user.id !== currentUserId.value)
+      .map(user => ({
+        value: user.id,
+        label: user.name,
+      }));
+  } catch (error) {
+    console.error('Failed to fetch users:', error);
+  }
+};
+
 onMounted(async () => {
   await fetchRoles();
   if (isEdit.value) {
     await fetchUser();
   }
+  await fetchUsers();
 });
 
 const fetchUser = async () => {
@@ -64,11 +83,13 @@ const fetchUser = async () => {
     const user = response.data;
     
     userName.value = user.name;
+    currentUserId.value = user.id;
     
     form.value = {
       name: user.name,
       email: user.email,
       role: user.role_id,
+      approver_id: user.approver_id || '',
       is_active: user.is_active !== undefined ? user.is_active : true,
       password: '',
       password_confirmation: '',
@@ -127,6 +148,7 @@ const handleSubmit = async () => {
       name: form.value.name,
       email: form.value.email,
       role_id: form.value.role,
+      approver_id: form.value.approver_id || null,
       is_active: form.value.is_active,
     };
 
@@ -221,6 +243,15 @@ const handleCancel = () => {
             :error="errors.role"
             :disabled="loading"
             required
+          />
+
+          <BaseSearchableSelect
+            v-model="form.approver_id"
+            label="Approver"
+            placeholder="Select approver (optional)"
+            :options="approverOptions"
+            :error="errors.approver_id"
+            :disabled="loading"
           />
 
           <div>

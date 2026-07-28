@@ -1,44 +1,69 @@
 <script setup>
 import { ref, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
-import { Plus, Eye } from "lucide-vue-next";
+import { Plus, Eye, CheckCircle, XCircle, Download, Upload, RefreshCw, Search, Filter } from "lucide-vue-next";
 import { useStatusBadge } from "@/composables/useStatusBadge";
 import { useDateFormat } from "@/composables/useDateFormat";
+import { useAuth } from "@/composables/useAuth";
+import { useToast } from "@/composables/useToast";
+import axios from "@/lib/axios";
 import BaseCard from "@/components/ui/BaseCard.vue";
 import DataTable from "@/components/ui/DataTable.vue";
 import BaseButton from "@/components/ui/BaseButton.vue";
 import BaseBadge from "@/components/ui/BaseBadge.vue";
+import BaseModal from "@/components/ui/BaseModal.vue";
+import BaseTextarea from "@/components/ui/BaseTextarea.vue";
+import BaseSelect from "@/components/ui/BaseSelect.vue";
 import SearchFilterBar from "@/components/ui/SearchFilterBar.vue";
+import ExportModal from "@/components/ui/ExportModal.vue";
+import ImportModal from "@/components/ui/ImportModal.vue";
 
 const router = useRouter();
 const { getVariant } = useStatusBadge();
 const { formatDate } = useDateFormat();
+const { user } = useAuth();
+const { toastSuccess, toastError } = useToast();
 
 const mutations = ref([]);
 const loading = ref(false);
 const searchQuery = ref("");
-const sortValue = ref("");
+const typeFilter = ref("");
+const statusFilter = ref("");
 const currentPage = ref(1);
 const perPage = ref(10);
 const total = ref(0);
 
+const showApproveModal = ref(false);
+const showRejectModal = ref(false);
+const showExportModal = ref(false);
+const showImportModal = ref(false);
+const selectedMutation = ref(null);
+const approvalNotes = ref("");
+const rejectNotes = ref("");
+const processingApproval = ref(false);
+
 const lastPage = computed(() => Math.ceil(total.value / perPage.value) || 1);
 
-const sortOptions = [
-    { value: "date_desc", label: "Date (Newest First)" },
-    { value: "date_asc", label: "Date (Oldest First)" },
-    { value: "status_pending", label: "Status (Pending First)" },
-    { value: "quantity_desc", label: "Quantity (High to Low)" },
+const typeOptions = [
+    { value: '', label: 'All Types' },
+    { value: 'in', label: 'Stock In' },
+    { value: 'out', label: 'Stock Out' }
+];
+
+const statusOptions = [
+    { value: '', label: 'All Status' },
+    { value: 'pending', label: 'Pending' },
+    { value: 'approved', label: 'Approved' },
+    { value: 'rejected', label: 'Rejected' }
 ];
 
 const columns = [
-    { key: "code", label: "Code", sortable: true },
-    { key: "item_name", label: "Item", sortable: true },
+    { key: "item_name_snapshot", label: "Item", sortable: true },
     { key: "type", label: "Type", sortable: false },
     { key: "quantity", label: "Quantity", sortable: true },
     { key: "status", label: "Status", sortable: false },
-    { key: "created_by", label: "Created By", sortable: false },
-    { key: "date", label: "Date", sortable: true },
+    { key: "user", label: "Created By", sortable: false },
+    { key: "transaction_date", label: "Date", sortable: true },
 ];
 
 onMounted(() => {
@@ -48,43 +73,19 @@ onMounted(() => {
 const fetchMutations = async () => {
     loading.value = true;
     try {
-        // Mock data with more than 10 items to test pagination
-        const allMutations = [
-            { id: 1, code: "MUT001", item_name: "Laptop Dell XPS 15", type: "IN", quantity: 10, status: "pending", created_by: "John Doe", date: "2026-07-25" },
-            { id: 2, code: "MUT002", item_name: "Mouse Wireless", type: "OUT", quantity: 5, status: "approved", created_by: "Jane Smith", date: "2026-07-25" },
-            { id: 3, code: "MUT003", item_name: "Keyboard Mechanical", type: "IN", quantity: 8, status: "pending", created_by: "Mike Johnson", date: "2026-07-24" },
-            { id: 4, code: "MUT004", item_name: "Monitor 27 inch", type: "OUT", quantity: 3, status: "rejected", created_by: "Sarah Williams", date: "2026-07-24" },
-            { id: 5, code: "MUT005", item_name: "USB Cable Type-C", type: "IN", quantity: 50, status: "approved", created_by: "John Doe", date: "2026-07-23" },
-            { id: 6, code: "MUT006", item_name: "HDMI Cable 2m", type: "OUT", quantity: 15, status: "approved", created_by: "Mike Johnson", date: "2026-07-23" },
-            { id: 7, code: "MUT007", item_name: "Webcam Logitech C920", type: "IN", quantity: 20, status: "pending", created_by: "Sarah Williams", date: "2026-07-22" },
-            { id: 8, code: "MUT008", item_name: "Headset Razer Kraken", type: "OUT", quantity: 7, status: "approved", created_by: "John Doe", date: "2026-07-22" },
-            { id: 9, code: "MUT009", item_name: "SSD Samsung 1TB", type: "IN", quantity: 25, status: "approved", created_by: "Jane Smith", date: "2026-07-21" },
-            { id: 10, code: "MUT010", item_name: "RAM DDR4 16GB", type: "OUT", quantity: 4, status: "rejected", created_by: "Mike Johnson", date: "2026-07-21" },
-            { id: 11, code: "MUT011", item_name: "GPU RTX 4080", type: "IN", quantity: 3, status: "pending", created_by: "Sarah Williams", date: "2026-07-20" },
-            { id: 12, code: "MUT012", item_name: "CPU Intel i9-13900K", type: "OUT", quantity: 2, status: "approved", created_by: "John Doe", date: "2026-07-20" },
-            { id: 13, code: "MUT013", item_name: "Motherboard Z790", type: "IN", quantity: 10, status: "pending", created_by: "Jane Smith", date: "2026-07-19" },
-            { id: 14, code: "MUT014", item_name: "PSU 850W Gold", type: "OUT", quantity: 5, status: "approved", created_by: "Mike Johnson", date: "2026-07-19" },
-            { id: 15, code: "MUT015", item_name: "Case ATX Mid Tower", type: "IN", quantity: 12, status: "pending", created_by: "Sarah Williams", date: "2026-07-18" },
-        ];
+        const params = new URLSearchParams();
+        if (searchQuery.value) params.append('search', searchQuery.value);
+        if (typeFilter.value) params.append('type', typeFilter.value);
+        if (statusFilter.value) params.append('status', statusFilter.value);
+        if (currentPage.value) params.append('page', currentPage.value);
         
-        // Apply client-side search filter
-        let filteredMutations = allMutations;
-        if (searchQuery.value) {
-            const q = searchQuery.value.toLowerCase();
-            filteredMutations = allMutations.filter(m => 
-                m.code.toLowerCase().includes(q) || 
-                m.item_name.toLowerCase().includes(q)
-            );
-        }
-        
-        total.value = filteredMutations.length;
-        
-        // Apply client-side pagination
-        const start = (currentPage.value - 1) * perPage.value;
-        mutations.value = filteredMutations.slice(start, start + perPage.value);
-        
+        const response = await axios.get(`/stock-mutations?${params.toString()}`);
+        mutations.value = response.data.data || [];
+        total.value = response.data.total || 0;
+        currentPage.value = response.data.current_page || 1;
     } catch (error) {
         console.error("Failed to fetch mutations:", error);
+        toastError("Failed to load mutations");
     } finally {
         loading.value = false;
     }
@@ -95,15 +96,28 @@ const handleSearch = () => {
     fetchMutations();
 };
 
+const handleSearchInput = () => {
+    if (searchQuery.value.length >= 2 || searchQuery.value.length === 0) {
+        currentPage.value = 1;
+        fetchMutations();
+    }
+};
+
 const handleClear = () => {
     searchQuery.value = "";
-    sortValue.value = "";
+    typeFilter.value = "";
+    statusFilter.value = "";
     currentPage.value = 1;
     fetchMutations();
 };
 
-const handleSort = (columnKey) => {
-    console.log("Sort by:", columnKey);
+const clearTypeFilter = () => {
+    typeFilter.value = "";
+    fetchMutations();
+};
+
+const clearStatusFilter = () => {
+    statusFilter.value = "";
     fetchMutations();
 };
 
@@ -120,12 +134,96 @@ const navigateToCreate = () => {
     router.push("/stock-mutations/create");
 };
 
+const openExportModal = () => {
+    showExportModal.value = true;
+};
+
+const openImportModal = () => {
+    if (!user.value?.approver_id) {
+        toastError('You do not have an assigned approver. Please contact administrator to set up your approver.');
+        return;
+    }
+    showImportModal.value = true;
+};
+
+const handleExportComplete = () => {
+    showExportModal.value = false;
+    toastSuccess("Export job created successfully");
+    router.push('/export-import-history');
+};
+
+const handleImportComplete = () => {
+    showImportModal.value = false;
+    toastSuccess("Import job created successfully");
+    router.push('/export-import-history');
+};
+
+const handleRefresh = () => {
+    fetchMutations();
+};
+
 const handleView = (row) => {
     router.push(`/stock-mutations/${row.id}`);
 };
 
 const getTypeVariant = (type) => {
-    return type === "IN" ? "success" : "warning";
+    return type === "in" ? "success" : "warning";
+};
+
+const canApprove = (mutation) => {
+    return mutation.status === 'pending' && mutation.user?.approver_id === user.value?.id;
+};
+
+const canEdit = (mutation) => {
+    return mutation.status === 'pending' && mutation.user_id === user.value?.id;
+};
+
+const openApproveModal = (mutation) => {
+    selectedMutation.value = mutation;
+    approvalNotes.value = "";
+    showApproveModal.value = true;
+};
+
+const openRejectModal = (mutation) => {
+    selectedMutation.value = mutation;
+    rejectNotes.value = "";
+    showRejectModal.value = true;
+};
+
+const handleApprove = async () => {
+    if (!selectedMutation.value) return;
+    processingApproval.value = true;
+    try {
+        await axios.post(`/stock-mutations/${selectedMutation.value.id}/approve`, {
+            approval_notes: approvalNotes.value || null
+        });
+        toastSuccess("Stock mutation approved successfully");
+        showApproveModal.value = false;
+        await fetchMutations();
+    } catch (error) {
+        console.error("Failed to approve mutation:", error);
+        toastError(error.response?.data?.message || "Failed to approve mutation");
+    } finally {
+        processingApproval.value = false;
+    }
+};
+
+const handleReject = async () => {
+    if (!selectedMutation.value || !rejectNotes.value) return;
+    processingApproval.value = true;
+    try {
+        await axios.post(`/stock-mutations/${selectedMutation.value.id}/reject`, {
+            approval_notes: rejectNotes.value
+        });
+        toastSuccess("Stock mutation rejected");
+        showRejectModal.value = false;
+        await fetchMutations();
+    } catch (error) {
+        console.error("Failed to reject mutation:", error);
+        toastError(error.response?.data?.message || "Failed to reject mutation");
+    } finally {
+        processingApproval.value = false;
+    }
 };
 </script>
 
@@ -140,21 +238,82 @@ const getTypeVariant = (type) => {
                     Track all inventory movements and changes
                 </p>
             </div>
-            <BaseButton @click="navigateToCreate">
-                <Plus :size="18" />
-                New Mutation
-            </BaseButton>
+            <div class="flex items-center gap-2">
+                <BaseButton @click="openExportModal" variant="secondary">
+                    <Download :size="18" />
+                    Export
+                </BaseButton>
+                <BaseButton @click="openImportModal" variant="secondary">
+                    <Upload :size="18" />
+                    Import
+                </BaseButton>
+                <BaseButton @click="navigateToCreate">
+                    <Plus :size="18" />
+                    New Mutation
+                </BaseButton>
+            </div>
         </div>
 
         <BaseCard>
-            <SearchFilterBar
-                v-model:search-query="searchQuery"
-                v-model:sort-value="sortValue"
-                :sort-options="sortOptions"
-                placeholder="Search mutations by code or item..."
-                @search="handleSearch"
-                @clear="handleClear"
-            />
+            <div class="flex items-center gap-3">
+                <div class="relative flex-1">
+                    <Search
+                        class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" 
+                        :size="20"
+                    />
+                    <input
+                        v-model="searchQuery"
+                        @input="handleSearchInput"
+                        type="text"
+                        placeholder="Search mutations by item name or notes..."
+                        class="w-full pl-10 pr-4 py-2.5 text-sm border focus:outline-none border-slate-300 rounded-lg focus:ring-1/2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+                    />
+                </div>
+                <div class="flex items-center gap-2 min-w-[200px]">
+                    <Filter :size="18" class="text-slate-500 flex-shrink-0" />
+                    <BaseSelect
+                        v-model="typeFilter"
+                        placeholder="Filter type"
+                        :options="typeOptions"
+                        @update:model-value="fetchMutations"
+                        class="flex-1"
+                    />
+                    <BaseButton
+                        v-if="typeFilter"
+                        @click="clearTypeFilter"
+                        variant="ghost"
+                        size="sm"
+                    >
+                        Clear
+                    </BaseButton>
+                </div>
+                <div class="flex items-center gap-2 min-w-[200px]">
+                    <Filter :size="18" class="text-slate-500 flex-shrink-0" />
+                    <BaseSelect
+                        v-model="statusFilter"
+                        placeholder="Filter status"
+                        :options="statusOptions"
+                        @update:model-value="fetchMutations"
+                        class="flex-1"
+                    />
+                    <BaseButton
+                        v-if="statusFilter"
+                        @click="clearStatusFilter"
+                        variant="ghost"
+                        size="sm"
+                    >
+                        Clear
+                    </BaseButton>
+                </div>
+                <button
+                    @click="handleRefresh"
+                    :disabled="loading"
+                    class="p-2.5 text-slate-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                    title="Refresh"
+                >
+                    <RefreshCw :size="20" :class="{ 'animate-spin': loading }" />
+                </button>
+            </div>
         </BaseCard>
         <DataTable
             :columns="columns"
@@ -171,7 +330,7 @@ const getTypeVariant = (type) => {
         >
             <template #cell-type="{ value }">
                 <BaseBadge :variant="getTypeVariant(value)">
-                    {{ value }}
+                    {{ value === 'in' ? 'IN' : 'OUT' }}
                 </BaseBadge>
             </template>
 
@@ -181,30 +340,142 @@ const getTypeVariant = (type) => {
                 </BaseBadge>
             </template>
 
-            <template #cell-date="{ value }">
+            <template #cell-user="{ row }">
+                {{ row.user?.name || 'Unknown' }}
+            </template>
+
+            <template #cell-transaction_date="{ value }">
                 {{ formatDate(value) }}
             </template>
 
             <template #cell-quantity="{ value, row }">
                 <span
                     :class="{
-                        'text-success-600 font-semibold': row.type === 'IN',
-                        'text-danger-600 font-semibold': row.type === 'OUT',
+                        'text-success-600 font-semibold': row.type === 'in',
+                        'text-danger-600 font-semibold': row.type === 'out',
                     }"
                 >
-                    {{ row.type === "IN" ? "+" : "-" }}{{ value }}
+                    {{ row.type === "in" ? "+" : "-" }}{{ value }}
                 </span>
             </template>
 
             <template #actions="{ row }">
-                <button
-                    @click.stop="handleView(row)"
-                    class="p-2 text-slate-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
-                    title="View Details"
-                >
-                    <Eye :size="16" />
-                </button>
+                <div class="flex items-center gap-1">
+                    <button
+                        @click.stop="handleView(row)"
+                        class="p-2 text-slate-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                        title="View Details"
+                    >
+                        <Eye :size="16" />
+                    </button>
+                    <button
+                        v-if="canApprove(row)"
+                        @click.stop="openApproveModal(row)"
+                        class="p-2 text-success-600 hover:text-success-700 hover:bg-success-50 rounded-lg transition-colors"
+                        title="Approve"
+                    >
+                        <CheckCircle :size="16" />
+                    </button>
+                    <button
+                        v-if="canApprove(row)"
+                        @click.stop="openRejectModal(row)"
+                        class="p-2 text-danger-600 hover:text-danger-700 hover:bg-danger-50 rounded-lg transition-colors"
+                        title="Reject"
+                    >
+                        <XCircle :size="16" />
+                    </button>
+                </div>
             </template>
         </DataTable>
+
+        <BaseModal v-model="showApproveModal" title="Approve Stock Mutation">
+            <div class="space-y-4">
+                <p class="text-sm text-slate-600">
+                    Are you sure you want to approve this stock mutation?
+                </p>
+                <div v-if="selectedMutation" class="bg-slate-50 p-3 rounded-lg text-sm">
+                    <p><strong>Item:</strong> {{ selectedMutation.item_name_snapshot }}</p>
+                    <p><strong>Type:</strong> {{ selectedMutation.type === 'in' ? 'Stock In' : 'Stock Out' }}</p>
+                    <p><strong>Quantity:</strong> {{ selectedMutation.quantity }}</p>
+                </div>
+                <BaseTextarea
+                    v-model="approvalNotes"
+                    label="Approval Notes (Optional)"
+                    placeholder="Add any notes for this approval..."
+                    :rows="3"
+                />
+            </div>
+            <template #footer>
+                <div class="flex justify-end gap-3">
+                    <BaseButton
+                        variant="ghost"
+                        @click="showApproveModal = false"
+                        :disabled="processingApproval"
+                    >
+                        Cancel
+                    </BaseButton>
+                    <BaseButton
+                        @click="handleApprove"
+                        :loading="processingApproval"
+                        :disabled="processingApproval"
+                    >
+                        <CheckCircle :size="18" />
+                        Approve
+                    </BaseButton>
+                </div>
+            </template>
+        </BaseModal>
+
+        <BaseModal v-model="showRejectModal" title="Reject Stock Mutation">
+            <div class="space-y-4">
+                <p class="text-sm text-slate-600">
+                    Please provide a reason for rejecting this stock mutation.
+                </p>
+                <div v-if="selectedMutation" class="bg-slate-50 p-3 rounded-lg text-sm">
+                    <p><strong>Item:</strong> {{ selectedMutation.item_name_snapshot }}</p>
+                    <p><strong>Type:</strong> {{ selectedMutation.type === 'in' ? 'Stock In' : 'Stock Out' }}</p>
+                    <p><strong>Quantity:</strong> {{ selectedMutation.quantity }}</p>
+                </div>
+                <BaseTextarea
+                    v-model="rejectNotes"
+                    label="Rejection Reason (Required)"
+                    placeholder="Explain why this mutation is being rejected..."
+                    :rows="4"
+                    required
+                />
+            </div>
+            <template #footer>
+                <div class="flex justify-end gap-3">
+                    <BaseButton
+                        variant="ghost"
+                        @click="showRejectModal = false"
+                        :disabled="processingApproval"
+                    >
+                        Cancel
+                    </BaseButton>
+                    <BaseButton
+                        variant="danger"
+                        @click="handleReject"
+                        :loading="processingApproval"
+                        :disabled="processingApproval || !rejectNotes"
+                    >
+                        <XCircle :size="18" />
+                        Reject
+                    </BaseButton>
+                </div>
+            </template>
+        </BaseModal>
+
+        <ExportModal
+            v-model="showExportModal"
+            model="stock-mutation"
+            @complete="handleExportComplete"
+        />
+
+        <ImportModal
+            v-model="showImportModal"
+            model="stock-mutation"
+            @complete="handleImportComplete"
+        />
     </div>
 </template>

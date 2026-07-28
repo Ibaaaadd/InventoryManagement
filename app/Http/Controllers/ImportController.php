@@ -14,8 +14,14 @@ class ImportController extends Controller
 {
     public function preview(Request $request, string $model)
     {
-        if (!in_array($model, ['role', 'user', 'category', 'item'])) {
+        if (!in_array($model, ['role', 'user', 'category', 'item', 'stock-mutation'])) {
             return response()->json(['message' => 'Invalid model'], 400);
+        }
+
+        if ($model === 'stock-mutation' && !auth()->user()->approver_id) {
+            return response()->json([
+                'message' => 'Anda belum memiliki approver yang ditunjuk. Hubungi administrator untuk mengatur approver Anda terlebih dahulu.'
+            ], 422);
         }
 
         $request->validate([
@@ -67,8 +73,14 @@ class ImportController extends Controller
 
     public function confirm(Request $request, string $model)
     {
-        if (!in_array($model, ['role', 'user', 'category', 'item'])) {
+        if (!in_array($model, ['role', 'user', 'category', 'item', 'stock-mutation'])) {
             return response()->json(['message' => 'Invalid model'], 400);
+        }
+
+        if ($model === 'stock-mutation' && !auth()->user()->approver_id) {
+            return response()->json([
+                'message' => 'Anda belum memiliki approver yang ditunjuk. Hubungi administrator untuk mengatur approver Anda terlebih dahulu.'
+            ], 422);
         }
 
         $validated = $request->validate([

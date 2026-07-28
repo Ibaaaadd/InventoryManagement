@@ -54,6 +54,18 @@ class DynamicExport implements FromCollection, WithHeadings, WithMapping, WithSt
                 $mapped[] = $row->role?->name ?? '';
             } elseif ($field === 'category' && $this->model === 'item') {
                 $mapped[] = $row->category?->name ?? '';
+            } elseif ($field === 'item_name' && $this->model === 'stock-mutation') {
+                $mapped[] = $row->item_name_snapshot ?? $row->item?->name ?? '';
+            } elseif ($field === 'item_sku' && $this->model === 'stock-mutation') {
+                $mapped[] = $row->item_sku_snapshot ?? $row->item?->sku ?? '';
+            } elseif ($field === 'created_by' && $this->model === 'stock-mutation') {
+                $mapped[] = $row->user?->name ?? '';
+            } elseif ($field === 'type' && $this->model === 'stock-mutation') {
+                $mapped[] = strtoupper($row->type);
+            } elseif ($field === 'status' && $this->model === 'stock-mutation') {
+                $mapped[] = ucfirst($row->status);
+            } elseif ($field === 'transaction_date' && $this->model === 'stock-mutation') {
+                $mapped[] = $row->transaction_date?->format('Y-m-d') ?? '';
             } elseif ($field === 'metadata' && $this->model === 'item') {
                 $mapped[] = $row->metadata ? json_encode($row->metadata, JSON_UNESCAPED_UNICODE) : '';
             } elseif ($field === 'is_active' && in_array($this->model, ['user', 'item'])) {

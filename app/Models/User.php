@@ -24,6 +24,7 @@ class User extends Authenticatable implements Auditable
         'email',
         'password',
         'role_id',
+        'approver_id',
         'is_active',
     ];
 
@@ -54,6 +55,16 @@ class User extends Authenticatable implements Auditable
     public function role()
     {
         return $this->belongsTo(Role::class);
+    }
+
+    public function approver()
+    {
+        return $this->belongsTo(User::class, 'approver_id');
+    }
+
+    public function subordinates()
+    {
+        return $this->hasMany(User::class, 'approver_id');
     }
 
     public function isAdministrator(): bool

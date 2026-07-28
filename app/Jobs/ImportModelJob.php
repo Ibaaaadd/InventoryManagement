@@ -7,6 +7,7 @@ use App\Models\ExportImportJob;
 use App\Models\Item;
 use App\Models\Role;
 use App\Models\User;
+use App\Models\StockMutation;
 use App\Support\ItemCodeGenerator;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -210,6 +211,40 @@ class ImportModelJob implements ShouldQueue
             }
         }
 
+        if ($this->model === 'stock-mutation') {
+            if (isset($data['item_name']) || isset($data['item_sku'])) {
+                $itemQuery = Item::query();
+                
+                if (isset($data['item_sku'])) {
+                    $itemQuery->where('sku', $data['item_sku']);
+                } elseif (isset($data['item_name'])) {
+                    $itemQuery->where('name', $data['item_name']);
+                }
+                
+                $item = $itemQuery->first();
+                
+                if (!$item) {
+                    $identifier = $data['item_sku'] ?? $data['item_name'];
+                    throw new \Exception("Item tidak ditemukan: {$identifier}");
+                }
+                
+                $data['item_id'] = $item->id;
+                unset($data['item_name'], $data['item_sku']);
+            }
+
+            if (isset($data['type'])) {
+                $data['type'] = strtolower($data['type']);
+            }
+
+            $data['user_id'] = $this->jobRecord->user_id;
+            $data['status'] = 'pending';
+            $data['attachment_path'] = null;
+
+            if (isset($data['transaction_date'])) {
+                $data['transaction_date'] = date('Y-m-d', strtotime($data['transaction_date']));
+            }
+        }
+
         return $data;
     }
 
@@ -240,6 +275,13 @@ class ImportModelJob implements ShouldQueue
                 'metadata' => 'nullable|array',
                 'is_active' => 'sometimes|boolean',
             ],
+            'stock-mutation' => [
+                'item_id' => 'required|exists:items,id',
+                'type' => 'required|in:in,out',
+                'quantity' => 'required|integer|min:1',
+                'transaction_date' => 'required|date',
+                'notes' => 'nullable|string',
+            ],
             default => [],
         };
 
@@ -253,6 +295,7 @@ class ImportModelJob implements ShouldQueue
             'user' => User::create($data),
             'category' => Category::create($data),
             'item' => Item::create($data),
+            'stock-mutation' => StockMutation::create($data),
             default => null,
         };
     }

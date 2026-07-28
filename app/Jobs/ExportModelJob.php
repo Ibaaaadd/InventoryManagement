@@ -8,6 +8,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Models\Category;
 use App\Models\Item;
+use App\Models\StockMutation;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -75,6 +76,7 @@ class ExportModelJob implements ShouldQueue
             'user' => $this->fetchUsers(),
             'category' => $this->fetchCategories(),
             'item' => $this->fetchItems(),
+            'stock-mutation' => $this->fetchStockMutations(),
             default => collect([]),
         };
     }
@@ -118,6 +120,21 @@ class ExportModelJob implements ShouldQueue
 
         if (in_array('category', $this->fields)) {
             $query->with('category');
+        }
+
+        return $query->get();
+    }
+
+    protected function fetchStockMutations()
+    {
+        $query = StockMutation::query();
+
+        if (in_array('item_name', $this->fields) || in_array('item_sku', $this->fields)) {
+            $query->with('item');
+        }
+
+        if (in_array('created_by', $this->fields)) {
+            $query->with('user');
         }
 
         return $query->get();

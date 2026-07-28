@@ -11,6 +11,7 @@ class ExportableFieldsConfig
             'user' => self::getUserFields(),
             'category' => self::getCategoryFields(),
             'item' => self::getItemFields(),
+            'stock-mutation' => self::getStockMutationFields(),
             default => [],
         };
     }
@@ -202,6 +203,72 @@ class ExportableFieldsConfig
                 'exportable' => true,
                 'importable' => true,
                 'aliases' => ['status', 'aktif', 'is_active', 'active'],
+            ],
+            'created_at' => [
+                'key' => 'created_at',
+                'label' => 'Tanggal Dibuat',
+                'exportable' => true,
+                'importable' => false,
+            ],
+        ];
+    }
+
+    private static function getStockMutationFields(): array
+    {
+        return [
+            'item_name' => [
+                'key' => 'item_name',
+                'label' => 'Nama Item',
+                'exportable' => true,
+                'importable' => true,
+                'aliases' => ['nama item', 'item name', 'nama barang', 'barang'],
+            ],
+            'item_sku' => [
+                'key' => 'item_sku',
+                'label' => 'SKU Item',
+                'exportable' => true,
+                'importable' => true,
+                'aliases' => ['sku', 'sku item', 'kode item', 'item sku'],
+            ],
+            'type' => [
+                'key' => 'type',
+                'label' => 'Tipe',
+                'exportable' => true,
+                'importable' => true,
+                'aliases' => ['tipe', 'type', 'jenis', 'in/out'],
+            ],
+            'quantity' => [
+                'key' => 'quantity',
+                'label' => 'Jumlah',
+                'exportable' => true,
+                'importable' => true,
+                'aliases' => ['jumlah', 'quantity', 'qty', 'kuantitas'],
+            ],
+            'transaction_date' => [
+                'key' => 'transaction_date',
+                'label' => 'Tanggal Transaksi',
+                'exportable' => true,
+                'importable' => true,
+                'aliases' => ['tanggal', 'date', 'tanggal transaksi', 'transaction date'],
+            ],
+            'notes' => [
+                'key' => 'notes',
+                'label' => 'Catatan',
+                'exportable' => true,
+                'importable' => true,
+                'aliases' => ['catatan', 'notes', 'keterangan', 'note'],
+            ],
+            'status' => [
+                'key' => 'status',
+                'label' => 'Status',
+                'exportable' => true,
+                'importable' => false,
+            ],
+            'created_by' => [
+                'key' => 'created_by',
+                'label' => 'Dibuat Oleh',
+                'exportable' => true,
+                'importable' => false,
             ],
             'created_at' => [
                 'key' => 'created_at',
