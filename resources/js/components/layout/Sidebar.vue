@@ -96,7 +96,7 @@ onMounted(() => {
 
 <template>
   <aside 
-    class="bg-slate-900 min-h-screen flex flex-col transition-all duration-300 ease-in-out"
+    class="fixed top-0 left-0 bg-slate-900 h-screen flex flex-col transition-all duration-300 ease-in-out z-40"
     :class="uiStore.sidebarCollapsed ? 'w-20' : 'w-64'"
   >
     <div class="px-4 py-4">

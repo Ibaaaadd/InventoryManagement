@@ -1,13 +1,21 @@
 <script setup>
+import { computed } from 'vue';
 import Navbar from '@/components/layout/Navbar.vue';
 import Sidebar from '@/components/layout/Sidebar.vue';
+import { useUIStore } from '@/stores/ui';
+
+const uiStore = useUIStore();
+
+const mainMargin = computed(() => {
+  return uiStore.sidebarCollapsed ? 'ml-20' : 'ml-64';
+});
 </script>
 
 <template>
   <div class="flex min-h-screen bg-slate-50">
     <Sidebar />
     
-    <div class="flex-1 flex flex-col min-w-0">
+    <div class="flex-1 flex flex-col min-w-0 transition-all duration-300" :class="mainMargin">
       <Navbar />
       
       <main class="flex-1 overflow-y-auto">
