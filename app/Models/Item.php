@@ -11,6 +11,8 @@ class Item extends Model implements Auditable
 {
     use HasUuids, \OwenIt\Auditing\Auditable, SoftDeletes;
 
+    public const LOW_STOCK_THRESHOLD = 10;
+
     protected $fillable = [
         'sku',
         'name',

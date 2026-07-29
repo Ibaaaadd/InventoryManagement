@@ -28,6 +28,8 @@ const { toastSuccess, toastError } = useToast();
 const mutations = ref([]);
 const loading = ref(false);
 const searchQuery = ref("");
+const sortField = ref("");
+const sortDirection = ref("");
 const typeFilter = ref("");
 const statusFilter = ref("");
 const currentPage = ref(1);
@@ -80,6 +82,10 @@ const fetchMutations = async () => {
         if (typeFilter.value) params.append('type', typeFilter.value);
         if (statusFilter.value) params.append('status', statusFilter.value);
         if (currentPage.value) params.append('page', currentPage.value);
+        if (sortField.value && sortDirection.value) {
+            params.append('sort', sortField.value);
+            params.append('order', sortDirection.value);
+        }
         
         const response = await axios.get(`/stock-mutations?${params.toString()}`);
         mutations.value = response.data.data || [];
@@ -107,8 +113,17 @@ const handleSearchInput = () => {
 
 const handleClear = () => {
     searchQuery.value = "";
+    sortField.value = "";
+    sortDirection.value = "";
     typeFilter.value = "";
     statusFilter.value = "";
+    currentPage.value = 1;
+    fetchMutations();
+};
+
+const handleSort = (sortData) => {
+    sortField.value = sortData.key;
+    sortDirection.value = sortData.direction;
     currentPage.value = 1;
     fetchMutations();
 };

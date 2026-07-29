@@ -34,13 +34,18 @@ const shadowClasses = {
       { 'hover:shadow-md hover:border-slate-300': hover }
     ]"
   >
-    <div v-if="title || subtitle" class="mb-4">
-      <h3 v-if="title" class="text-lg font-semibold text-slate-900 tracking-tight">
-        {{ title }}
-      </h3>
-      <p v-if="subtitle" class="text-sm text-slate-600 mt-1">
-        {{ subtitle }}
-      </p>
+    <div v-if="title || subtitle || $slots['header-actions']" class="mb-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 v-if="title" class="text-lg font-semibold text-slate-900 tracking-tight">
+            {{ title }}
+          </h3>
+          <p v-if="subtitle" class="text-sm text-slate-600 mt-1">
+            {{ subtitle }}
+          </p>
+        </div>
+        <slot name="header-actions" />
+      </div>
     </div>
     <slot />
   </div>

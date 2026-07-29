@@ -93,10 +93,10 @@ const navigateToLogin = () => {
                         <CheckCircle :size="32" class="text-success-600" />
                     </div>
                     <h3 class="text-xl font-semibold text-slate-900 mb-2">
-                        Manager Reviews & Approves
+                        Users Reviews & Approves
                     </h3>
                     <p class="text-slate-600">
-                        Managers review submitted mutations, verify
+                        Users review submitted mutations, verify
                         documentation, and approve or reject changes. Every
                         decision is recorded with timestamps and optional
                         rejection reasons.
@@ -178,10 +178,10 @@ const navigateToLogin = () => {
                             <h3
                                 class="text-lg font-semibold text-slate-900 mb-2"
                             >
-                                Two-Level Approval Workflow
+                                Approval Workflow
                             </h3>
                             <p class="text-slate-600">
-                                Staff proposes changes, managers approve. Clear
+                                Users propose changes, managers approve. Clear
                                 separation of duties ensures accuracy and
                                 prevents unauthorized modifications to inventory
                                 records.

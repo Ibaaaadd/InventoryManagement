@@ -41,10 +41,14 @@ const typeOptions = [
   { value: 'out', label: 'Stock Out (Outgoing)' },
 ];
 
+const selectedItem = computed(() => {
+  return itemOptions.value.find(opt => opt.value === form.value.item_id);
+});
+
 onMounted(async () => {
   if (!user.value?.approver_id) {
     hasApprover.value = false;
-    toastError('Anda belum memiliki approver yang ditunjuk. Hubungi administrator untuk mengatur approver Anda terlebih dahulu.');
+    toastError('You do not have an assigned approver. Please contact administrator to set up your approver.');
     router.push('/stock-mutations');
     return;
   }
@@ -62,6 +66,8 @@ const fetchItems = async () => {
     itemOptions.value = items.map(item => ({
       value: item.id,
       label: `${item.sku} - ${item.name}`,
+      stock: item.stock_quantity,
+      unit: item.unit || 'pcs'
     }));
   } catch (error) {
     console.error('Failed to fetch items:', error);
@@ -227,7 +233,19 @@ const handleDocumentError = (error) => {
               :disabled="loading || isEdit"
               required
             />
-            <p class="mt-1 text-xs text-slate-500">Select the item for this stock mutation</p>
+            <div v-if="selectedItem && selectedItem.stock !== undefined" class="mt-2 p-3 bg-slate-50 border border-slate-200 rounded-lg">
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-slate-600">Current Stock</span>
+                <span class="text-sm font-semibold" :class="{
+                  'text-success-600': selectedItem.stock > 10,
+                  'text-warning-600': selectedItem.stock > 0 && selectedItem.stock <= 10,
+                  'text-danger-600': selectedItem.stock === 0
+                }">
+                  {{ selectedItem.stock }} {{ selectedItem.unit || 'pcs' }}
+                </span>
+              </div>
+            </div>
+            <p v-else class="mt-1 text-xs text-slate-500">Select the item for this stock mutation</p>
           </div>
 
           <BaseSearchableSelect

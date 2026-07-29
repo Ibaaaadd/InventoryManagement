@@ -51,7 +51,13 @@ class StockMutationController extends Controller
             });
         }
 
-        $mutations = $query->orderBy('created_at', 'desc')->paginate(10);
+        if ($request->has('sort') && $request->has('order')) {
+            $query->orderBy($request->sort, $request->order);
+        } else {
+            $query->orderBy('created_at', 'desc');
+        }
+
+        $mutations = $query->paginate(10);
 
         return response()->json($mutations);
     }
@@ -60,7 +66,7 @@ class StockMutationController extends Controller
     {
         if (!auth()->user()->approver_id) {
             return response()->json([
-                'message' => 'Anda belum memiliki approver yang ditunjuk. Hubungi administrator untuk mengatur approver Anda terlebih dahulu.'
+                'message' => 'You do not have an assigned approver. Please contact administrator to set up your approver.'
             ], 422);
         }
 

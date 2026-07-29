@@ -11,12 +11,17 @@ use App\Http\Controllers\AuditController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\StockMutationController;
+use App\Http\Controllers\DashboardController;
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 Route::get('/user', [AuthController::class, 'user'])->middleware('auth:sanctum');
 
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get('dashboard/overview', [DashboardController::class, 'overview']);
+    Route::get('dashboard/mutation-trend', [DashboardController::class, 'mutationTrend']);
+    Route::get('dashboard/mutation-years', [DashboardController::class, 'mutationYears']);
+    
     Route::apiResource('roles', RoleController::class);
     Route::apiResource('users', UserController::class)->middleware('administrator');
     Route::apiResource('categories', CategoryController::class);

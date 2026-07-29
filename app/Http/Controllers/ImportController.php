@@ -20,7 +20,7 @@ class ImportController extends Controller
 
         if ($model === 'stock-mutation' && !auth()->user()->approver_id) {
             return response()->json([
-                'message' => 'Anda belum memiliki approver yang ditunjuk. Hubungi administrator untuk mengatur approver Anda terlebih dahulu.'
+                'message' => 'You do not have an assigned approver. Please contact administrator to set up your approver.'
             ], 422);
         }
 
@@ -79,7 +79,7 @@ class ImportController extends Controller
 
         if ($model === 'stock-mutation' && !auth()->user()->approver_id) {
             return response()->json([
-                'message' => 'Anda belum memiliki approver yang ditunjuk. Hubungi administrator untuk mengatur approver Anda terlebih dahulu.'
+                'message' => 'You do not have an assigned approver. Please contact administrator to set up your approver.'
             ], 422);
         }
 
